@@ -45,15 +45,12 @@ class GRange<T extends numericals> {
     }
 }
 
-
 require('./lib/Array')
 require('./lib/Bigint')
 require('./lib/Boolean')
 require('./lib/Generator')
 require('./lib/Number')
 require('./lib/String')
-
-
 
 // require('./ProjectEuler')
 // require('./Advent2020')
