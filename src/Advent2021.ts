@@ -1,10 +1,10 @@
 class Advent2021 {
     static Day1(data: string) {
         data.toIntList()
-            .map((v, i, a) => a.slice(i, i+3).Sum()).slice(0, -2).Log() //to sliding windows of 3 sums
-            .reduce((p, current) => 
-                [p[0] + (current > p[1] ? 1 : 0), current] //count increases in window sums
-            , [0, Number.MAX_VALUE])[0].Log()
+            .reduce((p, _, i, a) => {
+                const c = a.slice(i, i+3).Sum()
+                return [p[0] + (c > p[1] ? 1 : 0), c]
+            }, [0, Number.MAX_VALUE])[0].Log()
     }
 }
 
