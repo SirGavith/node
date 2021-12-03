@@ -1,27 +1,18 @@
-import fs from 'fs'
-import path from 'path'
+import { Files, PushorCreate } from './main'
+
+const UseExample = false,
+    Data = Files.ReadAllLines(UseExample ? '../example.txt' : '../input.txt')
 
 class Advent2021 {
-    static get Data() {
-        return fs.readFileSync(path.join(__dirname, '../input.txt'), 'utf8')
-    }
-    static get Data2() {
-        return `forward 5
-down 5
-forward 8
-up 3
-down 8
-forward 2`
-    }
-    static Day1(data: string) {
-        data.toIntList()
+    static Day1() {
+        Data.toIntArray()
             .reduce((p, _, i, a) => {
                 const c = a.slice(i, i+3).Sum()
                 return [p[0] + (c > p[1] ? 1 : 0), c]
             }, [0, Number.MAX_VALUE])[0].Log()
     }
     static Day2() {
-        Advent2021.Data.SplitLines().map(s => s.split(' '))
+        Data.map(s => s.split(' '))
             .reduce((p: number[], v) => {
                 const val = v[1].toInt()
                 return [
@@ -31,5 +22,23 @@ forward 2`
                 ]
             }, [0, 0, 0]).Log().slice(0, 2).Product().Log()
     }
+    static Day3() {
+        let oxygen = Data.copy(),
+            co2 = Data.copy()
+        for (let i = 0; oxygen.length > 1; i++) {
+            const mc = oxygen.map(x => x[i])
+                .sort((a,b) => a.toInt() - b.toInt())
+                .MostCommon()
+            oxygen = oxygen.filter(n => n[i] === mc)
+        }
+        for (let i = 0; co2.length > 1; i++) {
+            const mc = co2.map(x => x[i])
+                .sort((a,b) => a.toInt() - b.toInt())
+                .LeastCommon()
+            co2 = co2.filter(n => n[i] === mc)
+        }
+
+        (oxygen[0].toInt(2) * co2[0].toInt(2)).Log()
+    }
 }
-Advent2021.Day2()
+Advent2021.Day3();

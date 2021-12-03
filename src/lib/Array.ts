@@ -5,6 +5,8 @@ interface Array<T> {
     forEachGroup(groupSize: number, action: (value: T[], index: number[]) => void, allowDuplicates?: boolean, allowDoubles?: boolean): void
     Uniques(): T[]
     IsUnique(): boolean
+    MostCommon(): T
+    LeastCommon(): T
     Log(): Array<T>
 
     //String
@@ -51,7 +53,18 @@ function forEachRecursive(array: any[], times: number, action: (values: any[], i
         });
     }
 }
-
+Array.prototype.MostCommon = function() {
+    return this.sort((a,b) =>
+          this.filter(v => v === a).length
+        - this.filter(v => v === b).length
+    ).pop()
+}
+Array.prototype.LeastCommon = function() {
+    return this.sort((a,b) =>
+          this.filter(v => v === a).length
+        - this.filter(v => v === b).length
+    ).shift()
+}
 Array.prototype.Uniques = function() {
     return this.filter((value, i) => this.indexOf(value) === i)
 }
@@ -66,7 +79,7 @@ Array.prototype.Log = function() {
     return this
 }
 
-
+type numericals = number | bigint
 interface Array<T extends numericals> {
     Sum(): T
     Product(): T

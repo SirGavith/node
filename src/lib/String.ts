@@ -24,7 +24,7 @@ String.prototype.toCharArray = function(includeNewlines = true) {
     return [...this]
 }
 String.prototype.SplitLines = function() {
-    return this.valueOf().split('\n')
+    return this.valueOf().split('\n').map(s => s.replaceAll('\r', ''))
 }
 String.prototype.RegexTest = function(regex: RegExp) {
     return regex.test(this.valueOf())

@@ -1,6 +1,9 @@
+const fs = require('fs')
+const path = require('path')
+
 type numericals = number | bigint
 
-const range = (start: number, stop: number) => Array.from({length: stop - start}, (_, i) => start + i)
+export const Range = (start: number, stop: number) => Array.from({length: stop - start}, (_, i) => start + i)
 
 class GMath {
     /**
@@ -44,12 +47,25 @@ class GRange<T extends numericals> {
         }
     }
 }
+export function PushorCreate<T>(arr: T[], val: T) {
+    if (arr) arr.push(val)
+    else return [val]
+    return arr
+}
+
+
+export class Files {
+    static ReadAllLines(localpath: string): string[] {
+        return (fs.readFileSync(path.join(__dirname, localpath), 'utf8')as string).SplitLines()
+    }
+}
 
 require('./lib/Array')
 require('./lib/Bigint')
 require('./lib/Boolean')
 require('./lib/Generator')
 require('./lib/Number')
+require('./lib/Object')
 require('./lib/String')
 
 // require('./ProjectEuler')
