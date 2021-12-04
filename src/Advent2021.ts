@@ -59,38 +59,28 @@ class Advent2021 {
                 ) } }
             )
 
-        for (let i = 0; true; i++) {
-            //draw random
-            const rand = randoms[i]
-            //mark tiles
-            boards.forEach(board => {
-                board.board.forEach(row => {
-                    row.forEach(tile =>{
-                        if (tile.value === rand)
-                            tile.marked = true
-                    })
-                })
-            })
-            //check bingos
+        for (const rand of randoms) {
             for (const board of boards) { 
-                for (let ii = 0; ii < 5; ii++) {
-                    const row = board.board[ii],
-                        col = board.board.map(row => row[ii])
+                //mark tiles
+                board.board.forEach(row => 
+                    row.forEach(t => 
+                        (t.value === rand).IsTrue(() => t.marked = true)))
 
-                    //rows
-                    if (!board.bingo && row.every(tile => tile.marked))
-                        board.bingo = true
-
-                    //cols
-                    if (!board.bingo && col.every(tile => tile.marked))
-                        board.bingo = true
+                //check bingos
+                for (let i = 0; i < 5; i++) {
+                    const row = board.board[i],
+                        col = board.board.map(row => row[i])
+  
+                    if (col.every(t => t.marked) || row.every(t => t.marked))
+                        board.bingo = true;
                 }
-                
+
                 if (boards.every(b => b.bingo))
-                    return (board.board.flat()
+                // if (board.bingo)
+                    return (board.board.Log().flat()
                             .filter(t => !t.marked)
-                            .reduce((s, c) => s + c.value, 0)
-                        * rand).Log()
+                            .reduce((s, c) => s + c.value, 0).Log()
+                        * rand.Log()).Log()
             }
         }
     }
