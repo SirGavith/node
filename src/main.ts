@@ -55,8 +55,11 @@ export function PushorCreate<T>(arr: T[], val: T) {
 
 
 export class Files {
+    static ReadFile(localpath: string): string {
+        return (fs.readFileSync(path.join(__dirname, localpath), 'utf8') as string).replaceAll('\r', '')
+    }
     static ReadAllLines(localpath: string): string[] {
-        return (fs.readFileSync(path.join(__dirname, localpath), 'utf8')as string).SplitLines()
+        return Files.ReadFile(localpath).SplitLines()
     }
 }
 

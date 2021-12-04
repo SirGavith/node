@@ -1,7 +1,8 @@
 import { Files, PushorCreate } from './main'
 
 const UseExample = false,
-    Data = Files.ReadAllLines(UseExample ? '../example.txt' : '../input.txt')
+    Data = Files.ReadAllLines(UseExample ? '../example.txt' : '../input.txt'),
+    DataFull = Files.ReadFile(UseExample ? '../example.txt' : '../input.txt')
 
 class Advent2021 {
     static Day1() {
@@ -25,12 +26,16 @@ class Advent2021 {
     static Day3() {
         let oxygen = Data.copy(),
             co2 = Data.copy()
-        for (let i = 0; oxygen.length > 1; i++) {
-            const mc = oxygen.map(x => x[i])
+
+        Data.ReduceFilter(
+            (n, i) => n[i] === Data.map(x => x[i])
                 .sort((a,b) => a.toInt() - b.toInt())
                 .MostCommon()
-            oxygen = oxygen.filter(n => n[i] === mc)
-        }
+        ).Log()
+
+        // for (let i = 0; oxygen.length > 1; i++) {
+            
+        // }
         for (let i = 0; co2.length > 1; i++) {
             const mc = co2.map(x => x[i])
                 .sort((a,b) => a.toInt() - b.toInt())
@@ -40,5 +45,54 @@ class Advent2021 {
 
         (oxygen[0].toInt(2) * co2[0].toInt(2)).Log()
     }
+    static Day4() {
+        const d = DataFull.split('\n\n'),
+
+            randoms = d[0].split(',').toIntArray(),
+
+            boards = d.slice(1).map(b => { return {
+                bingo: false,
+                board: b.SplitLines().map(l => 
+                    l.replaceAll('  ', ' ').trim().split(' ')
+                    .toIntArray()
+                    .map(i => { return { value: i, marked: false }})
+                ) } }
+            )
+
+        for (let i = 0; true; i++) {
+            //draw random
+            const rand = randoms[i]
+            //mark tiles
+            boards.forEach(board => {
+                board.board.forEach(row => {
+                    row.forEach(tile =>{
+                        if (tile.value === rand)
+                            tile.marked = true
+                    })
+                })
+            })
+            //check bingos
+            for (const board of boards) { 
+                for (let ii = 0; ii < 5; ii++) {
+                    const row = board.board[ii],
+                        col = board.board.map(row => row[ii])
+
+                    //rows
+                    if (!board.bingo && row.every(tile => tile.marked))
+                        board.bingo = true
+
+                    //cols
+                    if (!board.bingo && col.every(tile => tile.marked))
+                        board.bingo = true
+                }
+                
+                if (boards.every(b => b.bingo))
+                    return (board.board.flat()
+                            .filter(t => !t.marked)
+                            .reduce((s, c) => s + c.value, 0)
+                        * rand).Log()
+            }
+        }
+    }
 }
-Advent2021.Day3();
+Advent2021.Day4();

@@ -7,6 +7,9 @@ interface Array<T> {
     IsUnique(): boolean
     MostCommon(): T
     LeastCommon(): T
+    /** loops until the list has one element, which it returns. 
+     in each iteration, it filters the list by the filter */
+    ReduceFilter(filter: (value: T, index: number, array: T[]) => boolean): T
     Log(): Array<T>
 
     //String
@@ -73,6 +76,18 @@ Array.prototype.IsUnique = function() {
 }
 Array.prototype.toIntArray = function(radix = 10) {
     return this.map(n => parseInt(n, radix))
+}
+Array.prototype.ReduceFilter = function(filter: (value: any, index: number, array: any[]) => boolean) {
+    //loops until the list has one element, which it returns; 
+    // in each iteration, it filters the list by the filter
+    let arr = this.copy()
+    let i = 0
+    while (true) {
+        arr = arr.filter(filter)
+        if (arr.length === 1) return arr[0]
+        i++
+    }
+
 }
 Array.prototype.Log = function() {
     console.log(this)
