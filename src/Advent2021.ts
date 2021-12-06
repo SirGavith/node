@@ -1,6 +1,6 @@
 import { Files, Range } from './main'
 
-const UseExample = true,
+const UseExample = false,
     Data = Files.ReadAllLines(UseExample ? '../example.txt' : '../input.txt'),
     DataFull = Files.ReadFile(UseExample ? '../example.txt' : '../input.txt')
 
@@ -99,13 +99,13 @@ class Advent2021 {
         for (const p of d)
             if (p.x1 === p.x2) //vertical
                 Range(p.y1, p.y2).forEach(n =>
-                    map.IncrementOrCreate(n, p.x1))
+                    map.IncrementOrCreate2D(n, p.x1))
             else if (p.y1 === p.y2) //horizontal
                 Range(p.x1, p.x2).forEach(n =>
-                    map.IncrementOrCreate(p.y1, n))
+                    map.IncrementOrCreate2D(p.y1, n))
             else //diagonal
                 for (let i = 0; i <= Math.abs(p.x1 - p.x2); i++)
-                    map.IncrementOrCreate(
+                    map.IncrementOrCreate2D(
                         p.y1 + (p.y1 > p.y2 ? -i : i),
                         p.x1 + (p.x1 > p.x2 ? -i : i))
 
@@ -116,7 +116,34 @@ class Advent2021 {
 
         map.flat().Count(c => c >= 2).Log()
     }
+    static Day6_naive() {
+        let school = Data[0].split(',').toIntArray().Log()
+
+        for (let i = 0; i < 18; i++) {
+            i.Log()
+            school.forEach((fish, ii) => {
+                if (fish===0) {
+                    school.push(8)
+                    school[ii] = 6
+                }
+                else school[ii]--
+            })
+                
+            school.Log()
+        }
+    }
+    static Day6_revised() {
+        const school: number[] = Array(9).fill(0)
+        Data[0].split(',').toIntArray().forEach(f => school[f]++)
+
+        for (let i = 0; i < 256; i++) {
+            let parents = school.shift()
+            school[6] += parents!
+            school[8] = parents!
+        }
+        school.Sum().Log()
+    }
 }
-// const startTime = process.hrtime()
-Advent2021.Day5();
-// (process.hrtime(startTime)[1]/1_000_000_000).Log()
+const startTime = process.hrtime()
+Advent2021.Day6_revised();
+(process.hrtime(startTime)[1]/1_000_000_000).Log()

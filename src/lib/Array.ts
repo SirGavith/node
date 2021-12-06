@@ -12,6 +12,7 @@ interface Array<T> {
     ReduceFilter(filter: (value: T, index: number, array: T[]) => boolean): T
     FillEmpty(value: T, pad?: number): Array<T>
     Count(predicate: (value: T, index: number, array: T[]) => boolean): number
+    IncrementOrCreate (index: number): void
     Log(): Array<T>
 
     //String
@@ -92,21 +93,23 @@ Array.prototype.ReduceFilter = function(filter: (value: any, index: number, arra
         i++
     }
 }
-Array.prototype.FillEmpty = function(value: any, pad?: number) {
-    const arr = this.Copy()
-    if (pad)
-        arr.length = pad
-    for (let i = 0; i < arr.length; i++) {
-        if (!arr[i])
-            arr[i] = value
+Array.prototype.FillEmpty = function<T>(fillValue: T, pad?: number) {
+    const arr: Array<T> = [],
+        len = pad ?? this.length
+    for (let i = 0; i < len; i++) {
+        arr[i] = this[i] ?? fillValue
     }
     return arr
 }
 Array.prototype.Count = function(predicate: (value: any, index: number, array: any[]) => boolean) {
     return this.filter(predicate).length
 }
-
-
+Array.prototype.IncrementOrCreate = function(index: number) {
+    if (this[index])
+        this[index]++
+    else
+        this[index] = 1
+}
 Array.prototype.Log = function() {
     console.log(this)
     return this
@@ -125,10 +128,10 @@ Array.prototype.Product = function() {
 }
 
 interface Array<T> {//<T extends Array> {
-    IncrementOrCreate(val1: number, val2: number): void
+    IncrementOrCreate2D(val1: number, val2: number): void
 }
 
-Array.prototype.IncrementOrCreate = function(val1: number, val2: number) {
+Array.prototype.IncrementOrCreate2D = function(val1: number, val2: number) {
     if (this[val1]) {
         if (this[val1][val2]) this[val1][val2]++
         else this[val1][val2] = 1
