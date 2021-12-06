@@ -137,9 +137,9 @@ class Advent2021 {
         Data[0].split(',').toIntArray().forEach(f => school[f]++)
 
         for (let i = 0; i < 256; i++) {
-            let parents = school.shift()
-            school[6] += parents!
-            school[8] = parents!
+            let parents = school.shift()!
+            school[6] += parents
+            school[8] = parents
         }
         school.Sum().Log()
     }
