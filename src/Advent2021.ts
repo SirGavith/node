@@ -1,6 +1,6 @@
-import { Files, PushorCreate } from './main'
+import { Files, Range } from './main'
 
-const UseExample = false,
+const UseExample = true,
     Data = Files.ReadAllLines(UseExample ? '../example.txt' : '../input.txt'),
     DataFull = Files.ReadFile(UseExample ? '../example.txt' : '../input.txt')
 
@@ -24,8 +24,8 @@ class Advent2021 {
             }, [0, 0, 0]).Log().slice(0, 2).Product().Log()
     }
     static Day3() {
-        let oxygen = Data.copy(),
-            co2 = Data.copy()
+        let oxygen = Data.Copy(),
+            co2 = Data.Copy()
 
         Data.ReduceFilter(
             (n, i) => n[i] === Data.map(x => x[i])
@@ -60,7 +60,7 @@ class Advent2021 {
             )
 
         for (const rand of randoms) {
-            for (const board of boards) { 
+            for (const board of boards.filter(b => !b.bingo)) {
                 //mark tiles
                 board.board.forEach(row => 
                     row.forEach(t => 
@@ -84,5 +84,39 @@ class Advent2021 {
             }
         }
     }
+    static Day5() {
+        const d = Data.map(d => {
+                const dd = d.split(' -> ').map(a => a.split(',').toIntArray())
+                return {
+                    x1: dd[0][0],
+                    y1: dd[0][1],
+                    x2: dd[1][0],
+                    y2: dd[1][1],
+                }
+            }).Log(),
+            map: number[][] = []
+
+        for (const p of d)
+            if (p.x1 === p.x2) //vertical
+                Range(p.y1, p.y2).forEach(n =>
+                    map.IncrementOrCreate(n, p.x1))
+            else if (p.y1 === p.y2) //horizontal
+                Range(p.x1, p.x2).forEach(n =>
+                    map.IncrementOrCreate(p.y1, n))
+            else //diagonal
+                for (let i = 0; i <= Math.abs(p.x1 - p.x2); i++)
+                    map.IncrementOrCreate(
+                        p.y1 + (p.y1 > p.y2 ? -i : i),
+                        p.x1 + (p.x1 > p.x2 ? -i : i))
+
+        const len = map.reduce((p, c) => c.length > p ? c.length : p, 0)
+        map.FillEmpty([]).forEach(r =>
+            r.FillEmpty(0, len)
+            .map(t => t === 0 ? '.' : t.toString()).join('').Log())
+
+        map.flat().Count(c => c >= 2).Log()
+    }
 }
-Advent2021.Day4();
+// const startTime = process.hrtime()
+Advent2021.Day5();
+// (process.hrtime(startTime)[1]/1_000_000_000).Log()

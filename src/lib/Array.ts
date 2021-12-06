@@ -1,6 +1,6 @@
 interface Array<T> {
     /** returns a shallow copy of an array */
-    copy(): T[]
+    Copy(): T[]
     forEachPair(action: (value: T[], index: number[]) => void, allowDuplicates?: boolean, allowDoubles?: boolean): void
     forEachGroup(groupSize: number, action: (value: T[], index: number[]) => void, allowDuplicates?: boolean, allowDoubles?: boolean): void
     Uniques(): T[]
@@ -10,16 +10,20 @@ interface Array<T> {
     /** loops until the list has one element, which it returns. 
      in each iteration, it filters the list by the filter */
     ReduceFilter(filter: (value: T, index: number, array: T[]) => boolean): T
+    FillEmpty(value: T, pad?: number): Array<T>
+    Count(predicate: (value: T, index: number, array: T[]) => boolean): number
     Log(): Array<T>
 
     //String
     toIntArray(radix?: number): number[]
 }
-Array.prototype.copy = function() {
+
+Array.prototype.Copy = function() {
     let a: any[] = []
-    this.forEach(val => {
-        a.push(val)
+    this.forEach((val, i) => {
+        a[i] = val
     })
+    a.length = this.length
     return a
 }
 Array.prototype.forEachPair = function(action: (value: any[], index: number[]) => void, allowDuplicates = true, allowDoubles = true) {
@@ -38,7 +42,7 @@ Array.prototype.forEachGroup = function(groupSize: number, action: (value: any[]
     const pairs: string[] = []
     forEachRecursive(this, groupSize, (vals, inds) => {
         if (allowDoubles || inds.IsUnique()) {
-            const svals = vals.copy().sort((a, b) => a - b).toString()
+            const svals = vals.Copy().sort((a, b) => a - b).toString()
             if (allowDuplicates || !pairs.includes(svals)) action(vals, inds)
             pairs.push(svals)
         }
@@ -80,22 +84,36 @@ Array.prototype.toIntArray = function(radix = 10) {
 Array.prototype.ReduceFilter = function(filter: (value: any, index: number, array: any[]) => boolean) {
     //loops until the list has one element, which it returns; 
     // in each iteration, it filters the list by the filter
-    let arr = this.copy()
+    let arr = this.Copy()
     let i = 0
     while (true) {
         arr = arr.filter(filter)
         if (arr.length === 1) return arr[0]
         i++
     }
-
 }
+Array.prototype.FillEmpty = function(value: any, pad?: number) {
+    const arr = this.Copy()
+    if (pad)
+        arr.length = pad
+    for (let i = 0; i < arr.length; i++) {
+        if (!arr[i])
+            arr[i] = value
+    }
+    return arr
+}
+Array.prototype.Count = function(predicate: (value: any, index: number, array: any[]) => boolean) {
+    return this.filter(predicate).length
+}
+
+
 Array.prototype.Log = function() {
     console.log(this)
     return this
 }
 
 type numericals = number | bigint
-interface Array<T extends numericals> {
+interface Array<T> {//<T extends numericals> {
     Sum(): T
     Product(): T
 }
@@ -104,4 +122,19 @@ Array.prototype.Sum = function() {
 }
 Array.prototype.Product = function() {
     return this.reduce((p, c) => p * c)
+}
+
+interface Array<T> {//<T extends Array> {
+    IncrementOrCreate(val1: number, val2: number): void
+}
+
+Array.prototype.IncrementOrCreate = function(val1: number, val2: number) {
+    if (this[val1]) {
+        if (this[val1][val2]) this[val1][val2]++
+        else this[val1][val2] = 1
+    }
+    else {
+        this[val1] = []
+        this[val1][val2] = 1
+    }
 }

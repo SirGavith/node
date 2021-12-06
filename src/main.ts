@@ -3,7 +3,10 @@ const path = require('path')
 
 type numericals = number | bigint
 
-export const Range = (start: number, stop: number) => Array.from({length: stop - start}, (_, i) => start + i)
+export function Range(start: number, stop: number) {
+    const x = [start, stop].sort((a,b) => a-b)
+    return Array.from({length: x[1] - x[0] + 1}, (_, i) => x[0] + i)
+}
 
 class GMath {
     /**
@@ -51,15 +54,19 @@ export function PushorCreate<T>(arr: T[], val: T) {
     if (arr) arr.push(val)
     else return [val]
     return arr
-}
+} 
 
 
 export class Files {
     static ReadFile(localpath: string): string {
-        return (fs.readFileSync(path.join(__dirname, localpath), 'utf8') as string).replaceAll('\r', '')
+        return Files.ReadAllLines(localpath).join('\n')
     }
     static ReadAllLines(localpath: string): string[] {
-        return Files.ReadFile(localpath).SplitLines()
+        return (fs.readFileSync(path.join(__dirname, localpath), 'utf8') as string)
+            .replaceAll('\r', '')
+            .SplitLines()
+            .filter(l => !l.startsWith('//'))
+            .map(l => l.trim())
     }
 }
 
