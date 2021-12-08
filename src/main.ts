@@ -72,6 +72,6 @@ require('./lib/String')
 
 // require('./ProjectEuler')
 // require('./Advent2020')
-// require('./Advent2021')
+require('./Advent2021')
 // require('./Linguistics')
-require('./geology')
+// require('./geology')

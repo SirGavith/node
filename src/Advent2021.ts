@@ -158,7 +158,7 @@ class Advent2021 {
     }
 }
 const startTime = process.hrtime();
-// Advent2021.Day7();
-[1,2,3,4,5,6,7,8,9].BinarySearch(n => n > 5).Log()
+Advent2021.Day7();
+// [1,2,3,4,5,6,7,8,9].BinarySearch(n => n > 5).Log()
 const time = process.hrtime(startTime);
 `Ran in ${time[0]}s ${time[1]/1_000_000}ms`.Log()
