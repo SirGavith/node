@@ -42,3 +42,4 @@ class Geology {
         }
     }
 }
+Geology.MagmaCrystallization()

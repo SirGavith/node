@@ -13,6 +13,7 @@ interface Array<T> {
     FillEmpty(value: T, pad?: number): Array<T>
     Count(predicate: (value: T, index: number, array: T[]) => boolean): number
     IncrementOrCreate (index: number): void
+    BinarySearch(search: (value: T, index: number) => boolean): T
     Log(): Array<T>
 
     //String
@@ -105,11 +106,20 @@ Array.prototype.Count = function(predicate: (value: any, index: number, array: a
     return this.filter(predicate).length
 }
 Array.prototype.IncrementOrCreate = function(index: number) {
-    if (this[index])
-        this[index]++
-    else
-        this[index] = 1
+    if (this[index]) this[index]++
+    else this[index] = 1
 }
+Array.prototype.BinarySearch = function<T>(search: (value: T, index: number) => boolean) {
+    let index = this.length / 2,
+        prevVal
+    for (let i = this.length; true; i++) {
+        if (search(this[index], index))
+            index += index / 2
+        else index /= 2
+        prevVal = index
+    }
+}
+
 Array.prototype.Log = function() {
     console.log(this)
     return this

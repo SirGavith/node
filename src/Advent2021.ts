@@ -72,7 +72,7 @@ class Advent2021 {
                         col = board.board.map(row => row[i])
   
                     if (col.every(t => t.marked) || row.every(t => t.marked))
-                        board.bingo = true;
+                        board.bingo = true
                 }
 
                 if (boards.every(b => b.bingo))
@@ -122,7 +122,7 @@ class Advent2021 {
         for (let i = 0; i < 18; i++) {
             i.Log()
             school.forEach((fish, ii) => {
-                if (fish===0) {
+                if (fish === 0) {
                     school.push(8)
                     school[ii] = 6
                 }
@@ -133,17 +133,32 @@ class Advent2021 {
         }
     }
     static Day6_revised() {
-        const school: number[] = Array(9).fill(0)
+        const school: bigint[] = Array(9).fill(BigInt(0))
         Data[0].split(',').toIntArray().forEach(f => school[f]++)
 
-        for (let i = 0; i < 256; i++) {
+        for (let i = 0; i < 2560; i++) {
             let parents = school.shift()!
             school[6] += parents
             school[8] = parents
         }
         school.Sum().Log()
     }
+    static Day7() {
+        const d = Data[0].split(',').toIntArray().Log()
+
+        Range(0, Math.max(...d)) //could binary search
+            .map(i =>
+                d.map(crab => {
+                    const n = Math.abs(crab - i)
+                    return n * (n + 1) / 2
+                }).Sum())
+            .reduce((prev:number[], cur, i) =>
+                prev[0] > cur ? [cur, i] : prev,
+            [Number.MAX_VALUE, 0]).Log()
+    }
 }
-const startTime = process.hrtime()
-Advent2021.Day6_revised();
-(process.hrtime(startTime)[1]/1_000_000_000).Log()
+const startTime = process.hrtime();
+// Advent2021.Day7();
+[1,2,3,4,5,6,7,8,9].BinarySearch(n => n > 5).Log()
+const time = process.hrtime(startTime);
+`Ran in ${time[0]}s ${time[1]/1_000_000}ms`.Log()
