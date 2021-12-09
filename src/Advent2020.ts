@@ -71,7 +71,7 @@ class Advent2020 {
             // return d.toCharArray(false).Uniques().length
             
             const dd = d.SplitLines()
-            let shared = dd[0].toCharArray()
+            let shared = dd[0].toArray()
             dd.forEach(person => {
                 shared = shared.filter(answer => person.includes(answer))
             })

@@ -14,6 +14,7 @@ interface Array<T> {
     Count(predicate: (value: T, index: number, array: T[]) => boolean): number
     IncrementOrCreate (index: number): void
     BinarySearch(search: (value: T, index: number) => boolean): T
+    Permutations(): T[][]
     Log(): Array<T>
 
     //String
@@ -120,6 +121,25 @@ Array.prototype.BinarySearch = function<T>(search: (value: T, index: number) => 
     }
 }
 
+Array.prototype.Permutations = function<T>() {
+    let result: T[][] = [];
+
+    const permute = (arr: T[], m: T[] = []) => {
+        if (arr.length === 0) {
+            result.push(m)
+        } else {
+            for (let i = 0; i < arr.length; i++) {
+                let curr = arr.slice();
+                let next = curr.splice(i, 1);
+                permute(curr.slice(), m.concat(next))
+            }
+        }
+    }
+
+    permute(this)
+
+    return result;
+}
 Array.prototype.Log = function() {
     console.log(this)
     return this
@@ -129,6 +149,7 @@ type numericals = number | bigint
 interface Array<T> {//<T extends numericals> {
     Sum(): T
     Product(): T
+    toInt(radix?: number): number
 }
 Array.prototype.Sum = function() {
     return this.reduce((p,c) => p+c)
@@ -136,9 +157,13 @@ Array.prototype.Sum = function() {
 Array.prototype.Product = function() {
     return this.reduce((p, c) => p * c)
 }
+Array.prototype.toInt = function(radix = 10) {
+    return this.join('').toInt()
+}
 
 interface Array<T> {//<T extends Array> {
     IncrementOrCreate2D(val1: number, val2: number): void
+    toObject(): {}
 }
 
 Array.prototype.IncrementOrCreate2D = function(val1: number, val2: number) {
@@ -150,4 +175,7 @@ Array.prototype.IncrementOrCreate2D = function(val1: number, val2: number) {
         this[val1] = []
         this[val1][val2] = 1
     }
+}
+Array.prototype.toObject = function() {
+    return Object.fromEntries(this)
 }

@@ -1,6 +1,6 @@
-import { ArraySort, Files, Range } from './main'
+import { ArraySort as Sorts, Files, Range } from './main'
 
-const UseExample = true,
+const UseExample = false,
     Data = Files.ReadAllLines(UseExample ? '../example.txt' : '../input.txt'),
     DataFull = Files.ReadFile(UseExample ? '../example.txt' : '../input.txt')
 
@@ -158,51 +158,35 @@ class Advent2021 {
     }
     static Day8() {
         const d = Data.map(display => display.split(' | ')
-            .map(d => d.split(' ')
-                .map(a => a.toCharArray().sort(ArraySort.Alphabetical).join('')))).Log()
+            .map(d => d.split(' ').map(a => a.toArray())))
             
         d.reduce((count, cur) => {
-            const knowns: {[key: string]: 1|2|3|4|5|6|7|8|9|0} = {},
-                keyNot: {[key: string]: Set<string>} = Object.fromEntries('ABCDEFG'.toCharArray().map(c => [c, new Set()])),
-                c = cur.flat().Count(v => {
-                    const easy = [2, 3, 4, 7].includes(v.length)
-                    if (easy)
-                        knowns[v] = {2: 1, 3: 7, 4: 4, 7: 8}[v.length as 2|3|4|7]as 1|2|3|4|5|6|7|8|9|0
-                    return easy
-                });
+            const [signals, segments] = cur,
+                mapDigit = (d: string[], map: {[x: string]: any}) => d.map(wire => map[wire]).sort(Sorts.Alphabetical).join(''),
+                sevenSegs = {
+                    'ABCEFG': 0,
+                    'CF': 1,
+                    'ACDEG': 2,
+                    'ACDFG': 3,
+                    'BCDF': 4,
+                    'ABDFG': 5,
+                    'ABDEFG': 6,
+                    'ACF': 7,
+                    'ABCDEFG': 8,
+                    'ABCDFG': 9,
+                },
+                validSegments = Object.keys(sevenSegs),
+                wires = 'abcdefg'.toArray()
 
-            console.log(cur[0], c)
-            knowns.Log()
+            for (const perm of 'ABCDEFG'.toArray().Permutations()) {
+                const map: {[key: string]: string} = perm.map((val, i) => [wires[i], val]).toObject()
 
-            for (const [key, value] of Object.entries(knowns)) {
-                const x = {
-                    0: 'ABCEFG',
-                    1: 'CF',
-                    2: 'ACDEG',
-                    3: 'ACDFG',
-                    4: 'BCDF',
-                    5: 'ABDFG',
-                    6: 'ABDEFG',
-                    7: 'ACF',
-                    8: 'ABCDEFG',
-                    9: 'ABCDFG'
-                }[value],
-                    y = x.toCharArray()
-                for (const [kkey, vvalue] of Object.entries(keyNot)) {
-                    if (!y.includes(kkey))
-                        key.toCharArray().forEach(k => keyNot[kkey].add(k))
-                }
-                
-                console.log(key, value, x, keyNot)
-
-                
+                if(signals.every(digit => validSegments.includes(mapDigit(digit, map))))
+                    return count +  segments.map(digit =>
+                        sevenSegs[mapDigit(digit, map) as keyof typeof sevenSegs]).join('').toInt()
             }
-
-            
-
-
-            return count 
-        }, 0)
+            throw new Error('Could not find successful permutation')
+        }, 0).Log()
     }
 }
 const startTime = process.hrtime();

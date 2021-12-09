@@ -1,7 +1,7 @@
 interface String {
     toIntList(radix?: number): number[]
     toInt(radix?: number): number
-    toCharArray(includeNewlines?: boolean): string[]
+    toArray(includeNewlines?: boolean): string[]
     SplitLines(): string[]
     RegexTest(regex: RegExp): boolean
     ReplaceMap(map: { [key: string]: string }): string
@@ -15,7 +15,7 @@ String.prototype.toIntList = function(radix = 10) {
 String.prototype.toInt = function(radix = 10) {
     return parseInt(this.valueOf(), radix)
 }
-String.prototype.toCharArray = function(includeNewlines = true) {
+String.prototype.toArray = function(includeNewlines = true) {
     if (!includeNewlines) {
         return [...this].filter(v => {
             return v != '\n'
