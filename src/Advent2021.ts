@@ -178,11 +178,11 @@ class Advent2021 {
                 validSegments = Object.keys(sevenSegs),
                 wires = 'abcdefg'.toArray()
 
-            for (const perm of 'ABCDEFG'.toArray().Permutations()) {
+            for (const perm of 'ABCDEFG'.toArray().Permutations()) { //loop through all wire => segment mappings
                 const map: {[key: string]: string} = perm.map((val, i) => [wires[i], val]).toObject()
 
                 if(signals.every(digit => validSegments.includes(mapDigit(digit, map))))
-                    return count +  segments.map(digit =>
+                    return count +  segments.map(digit => //count the output of those which can decode all signals into digits
                         sevenSegs[mapDigit(digit, map) as keyof typeof sevenSegs]).join('').toInt()
             }
             throw new Error('Could not find successful permutation')
@@ -193,7 +193,3 @@ const startTime = process.hrtime();
 Advent2021.Day8();
 const time = process.hrtime(startTime);
 `Ran in ${time[0]}s ${time[1]/1_000_000}ms`.Log();
-
-//generate all wire => segment mappings
-//filter to those which can decode all signals into digits
-//hope its only one
