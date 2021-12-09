@@ -156,33 +156,34 @@ class Advent2021 {
                 prev[0] > cur ? [cur, i] : prev,
             [Number.MAX_VALUE, 0]).Log()
     }
-    static Day8() {
+    static Day8() {  //1.9s
         const d = Data.map(display => display.split(' | ')
-            .map(d => d.split(' ').map(a => a.toArray())))
+            .map(d => d.split(' ').map(a => a.toArray()))),
+            sevenSegs = {
+                'ABCEFG': 0,
+                'CF': 1,
+                'ACDEG': 2,
+                'ACDFG': 3,
+                'BCDF': 4,
+                'ABDFG': 5,
+                'ABDEFG': 6,
+                'ACF': 7,
+                'ABCDEFG': 8,
+                'ABCDFG': 9,
+            },
+            validSegments = Object.keys(sevenSegs),
+            wires = 'abcdefg'.toArray(),
+            perms = 'ABCDEFG'.toArray().Permutations(),
+            mapDigit = (d: string[], map: {[x: string]: any}) => d.map(wire => map[wire]).sort(Sorts.Alphabetical).join('')
             
         d.reduce((count, cur) => {
-            const [signals, segments] = cur,
-                mapDigit = (d: string[], map: {[x: string]: any}) => d.map(wire => map[wire]).sort(Sorts.Alphabetical).join(''),
-                sevenSegs = {
-                    'ABCEFG': 0,
-                    'CF': 1,
-                    'ACDEG': 2,
-                    'ACDFG': 3,
-                    'BCDF': 4,
-                    'ABDFG': 5,
-                    'ABDEFG': 6,
-                    'ACF': 7,
-                    'ABCDEFG': 8,
-                    'ABCDFG': 9,
-                },
-                validSegments = Object.keys(sevenSegs),
-                wires = 'abcdefg'.toArray()
+            const [signals, segments] = cur
 
-            for (const perm of 'ABCDEFG'.toArray().Permutations()) { //loop through all wire => segment mappings
+            for (const perm of perms) {     //loop through all wire => segment mappings
                 const map: {[key: string]: string} = perm.map((val, i) => [wires[i], val]).toObject()
 
                 if(signals.every(digit => validSegments.includes(mapDigit(digit, map))))
-                    return count +  segments.map(digit => //count the output of those which can decode all signals into digits
+                    return count + segments.map(digit =>    //count the output of those which can decode all signals into digits
                         sevenSegs[mapDigit(digit, map) as keyof typeof sevenSegs]).join('').toInt()
             }
             throw new Error('Could not find successful permutation')
