@@ -1,6 +1,6 @@
-import { Files, Range } from './main'
+import { ArraySort, Files, Range } from './main'
 
-const UseExample = false,
+const UseExample = true,
     Data = Files.ReadAllLines(UseExample ? '../example.txt' : '../input.txt'),
     DataFull = Files.ReadFile(UseExample ? '../example.txt' : '../input.txt')
 
@@ -156,9 +156,60 @@ class Advent2021 {
                 prev[0] > cur ? [cur, i] : prev,
             [Number.MAX_VALUE, 0]).Log()
     }
+    static Day8() {
+        const d = Data.map(display => display.split(' | ')
+            .map(d => d.split(' ')
+                .map(a => a.toCharArray().sort(ArraySort.Alphabetical).join('')))).Log()
+            
+        d.reduce((count, cur) => {
+            const knowns: {[key: string]: 1|2|3|4|5|6|7|8|9|0} = {},
+                keyNot: {[key: string]: Set<string>} = Object.fromEntries('ABCDEFG'.toCharArray().map(c => [c, new Set()])),
+                c = cur.flat().Count(v => {
+                    const easy = [2, 3, 4, 7].includes(v.length)
+                    if (easy)
+                        knowns[v] = {2: 1, 3: 7, 4: 4, 7: 8}[v.length as 2|3|4|7]as 1|2|3|4|5|6|7|8|9|0
+                    return easy
+                });
+
+            console.log(cur[0], c)
+            knowns.Log()
+
+            for (const [key, value] of Object.entries(knowns)) {
+                const x = {
+                    0: 'ABCEFG',
+                    1: 'CF',
+                    2: 'ACDEG',
+                    3: 'ACDFG',
+                    4: 'BCDF',
+                    5: 'ABDFG',
+                    6: 'ABDEFG',
+                    7: 'ACF',
+                    8: 'ABCDEFG',
+                    9: 'ABCDFG'
+                }[value],
+                    y = x.toCharArray()
+                for (const [kkey, vvalue] of Object.entries(keyNot)) {
+                    if (!y.includes(kkey))
+                        key.toCharArray().forEach(k => keyNot[kkey].add(k))
+                }
+                
+                console.log(key, value, x, keyNot)
+
+                
+            }
+
+            
+
+
+            return count 
+        }, 0)
+    }
 }
 const startTime = process.hrtime();
-Advent2021.Day7();
-// [1,2,3,4,5,6,7,8,9].BinarySearch(n => n > 5).Log()
+Advent2021.Day8();
 const time = process.hrtime(startTime);
-`Ran in ${time[0]}s ${time[1]/1_000_000}ms`.Log()
+`Ran in ${time[0]}s ${time[1]/1_000_000}ms`.Log();
+
+//generate all wire => segment mappings
+//filter to those which can decode all signals into digits
+//hope its only one

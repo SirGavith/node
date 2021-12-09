@@ -62,6 +62,12 @@ export class Files {
     }
 }
 
+export abstract class ArraySort {
+    static LeastFirst = (a: number, b: number) => a - b
+    static GreatestFirst = (a: number, b: number) => b - a
+    static Alphabetical = (a: string, b: string) => a.localeCompare(b)
+}
+
 require('./lib/Array')
 require('./lib/Bigint')
 require('./lib/Boolean')
