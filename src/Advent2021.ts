@@ -1,5 +1,6 @@
+import { Stack } from './lib/Stack'
 import { Array2D as Array2D, XY } from './lib/XY'
-import { ArraySort as Sorts, Files, Range } from './main'
+import { Sorts, Files, Range } from './main'
 
 const UseExample = false,
     Data = Files.ReadAllLines(UseExample ? '../example.txt' : '../input.txt'),
@@ -218,8 +219,35 @@ class Advent2021 {
             return b.size
         }).sort(Sorts.GreatestFirst).slice(0, 3).Product().Log()
     }
+    static Day10() {
+        const invertBracket: {[b: string]: '>'|'}'|']'|')'} = {
+            '(': ')',
+            '[': ']',
+            '{': '}',
+            '<': '>'
+        }
+        Data.map(line => {
+            var stack = new Stack<string>()
+
+            for (const c of line.toArray()) {
+                if (c.in('([{<')) {
+                    stack.Push(c)
+                } else if (stack.Count === 0 || invertBracket[stack.Pop()!] !== c) {
+                    return undefined //corrputed
+                }
+            }
+            return stack.Array.reverse()
+                .reduce((a, c) =>
+                a * 5 + {
+                    ')': 1,
+                    ']': 2,
+                    '}': 3,
+                    '>': 4
+                }[invertBracket[c]], 0)
+        }).RemoveUndefined().Log().Median().Log()
+    }
 }
 const startTime = process.hrtime();
-Advent2021.Day9();
+Advent2021.Day10();
 const time = process.hrtime(startTime);
 `Ran in ${time[0]}s ${time[1]/1_000_000}ms`.Log();

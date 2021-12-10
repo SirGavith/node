@@ -2,6 +2,7 @@ interface String {
     toIntList(radix?: number): number[]
     toInt(radix?: number): number
     toArray(includeNewlines?: boolean): string[]
+    in(str: string): boolean
     SplitLines(): string[]
     RegexTest(regex: RegExp): boolean
     ReplaceMap(map: { [key: string]: string }): string
@@ -22,6 +23,9 @@ String.prototype.toArray = function(includeNewlines = true) {
         })
     }
     return [...this]
+}
+String.prototype.in = function(str: string) {
+    return str.includes(this.valueOf())
 }
 String.prototype.SplitLines = function() {
     return this.valueOf().split('\n').map(s => s.replaceAll('\r', ''))

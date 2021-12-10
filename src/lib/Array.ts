@@ -16,6 +16,7 @@ interface Array<T> {
     BinarySearch(search: (value: T, index: number) => boolean): T
     Permutations(): T[][]
     RemoveUndefined(): NonNullable<T>[]
+    Median(): T
     Log(): Array<T>
 
     //String
@@ -147,6 +148,16 @@ Array.prototype.RemoveUndefined = function<T>() {
         if (v != undefined && v != null) arr.push(v as NonNullable<T>)
     }
     return arr
+}
+Array.prototype.Median = function() {
+    const arr = this.sort((a, b) => a - b),
+        len = arr.length / 2
+    if (this.length.IsEven()) {
+        return (arr[Math.floor(len)] + arr[Math.ceil(len)]) / 2
+    }
+    else {
+        return this.at(arr.length / 2)
+    } 
 }
 Array.prototype.Log = function() {
     console.log(this)
