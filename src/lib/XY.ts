@@ -100,7 +100,7 @@ export class XY {
     }
 }
 
-export class Array2d<T> {
+export class Array2D<T> {
     Array: T[][] = []
 
     constructor(public Size: XY) {
@@ -145,7 +145,7 @@ export class Array2d<T> {
         if (arr.some(row => row.length !== arr[0].length))
             throw new RangeError('Array must be rectangular')
 
-        const out = new Array2d<T>(new XY(arr[0].length, arr.length))
+        const out = new Array2D<T>(new XY(arr[0].length, arr.length))
         arr.forEach((row, y) => {
             row.forEach((tile, x) => {
                 out.set(new XY(x, y), tile)

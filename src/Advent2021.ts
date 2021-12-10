@@ -1,7 +1,7 @@
-import { Array2d as Array2D, XY } from './lib/XY'
+import { Array2D as Array2D, XY } from './lib/XY'
 import { ArraySort as Sorts, Files, Range } from './main'
 
-const UseExample = true,
+const UseExample = false,
     Data = Files.ReadAllLines(UseExample ? '../example.txt' : '../input.txt'),
     DataFull = Files.ReadFile(UseExample ? '../example.txt' : '../input.txt')
 
@@ -201,7 +201,7 @@ class Advent2021 {
     static Day9() {
         const d = Array2D.fromArray(Data.map(d => d.toArray().toIntArray())),
             basins: XY[] = []
-        
+
         d.forEach((tile, xy) => {
             if (tile != undefined && d.Neighbours(xy).Values().every(n => n > tile)) {
                 basins.push(xy)
@@ -212,7 +212,7 @@ class Advent2021 {
             const b = new Set<string>().add(basin.toString())
 
             for (const bb of b) {
-                d.Neighbours(XY.fromString(bb)).forEach((key, val) => (val < 9).IsTrue(() => b.add(key)))
+                d.Neighbours(XY.fromString(bb)).forEach((pos, height) => (height < 9).IsTrue(() => b.add(pos)))
             }
 
             return b.size
