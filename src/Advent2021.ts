@@ -1,6 +1,7 @@
+import { Array2d as Array2D, XY } from './lib/XY'
 import { ArraySort as Sorts, Files, Range } from './main'
 
-const UseExample = false,
+const UseExample = true,
     Data = Files.ReadAllLines(UseExample ? '../example.txt' : '../input.txt'),
     DataFull = Files.ReadFile(UseExample ? '../example.txt' : '../input.txt')
 
@@ -12,6 +13,7 @@ class Advent2021 {
                 return [p[0] + (c > p[1] ? 1 : 0), c]
             }, [0, Number.MAX_VALUE])[0].Log()
     }
+
     static Day2() {
         Data.map(s => s.split(' '))
             .reduce((p: number[], v) => {
@@ -23,6 +25,7 @@ class Advent2021 {
                 ]
             }, [0, 0, 0]).Log().slice(0, 2).Product().Log()
     }
+
     static Day3() {
         let oxygen = Data.Copy(),
             co2 = Data.Copy()
@@ -45,6 +48,7 @@ class Advent2021 {
 
         (oxygen[0].toInt(2) * co2[0].toInt(2)).Log()
     }
+
     static Day4() {
         const d = DataFull.split('\n\n'),
 
@@ -84,6 +88,7 @@ class Advent2021 {
             }
         }
     }
+
     static Day5() {
         const d = Data.map(d => {
                 const dd = d.split(' -> ').map(a => a.split(',').toIntArray())
@@ -116,6 +121,7 @@ class Advent2021 {
 
         map.flat().Count(c => c >= 2).Log()
     }
+
     static Day6_naive() {
         let school = Data[0].split(',').toIntArray().Log()
 
@@ -143,6 +149,7 @@ class Advent2021 {
         }
         school.Sum().Log()
     }
+
     static Day7() {
         const d = Data[0].split(',').toIntArray().Log()
 
@@ -156,6 +163,7 @@ class Advent2021 {
                 prev[0] > cur ? [cur, i] : prev,
             [Number.MAX_VALUE, 0]).Log()
     }
+
     static Day8() {  //1.9s
         const d = Data.map(display => display.split(' | ')
             .map(d => d.split(' ').map(a => a.toArray()))),
@@ -189,8 +197,29 @@ class Advent2021 {
             throw new Error('Could not find successful permutation')
         }, 0).Log()
     }
+
+    static Day9() {
+        const d = Array2D.fromArray(Data.map(d => d.toArray().toIntArray())),
+            basins: XY[] = []
+        
+        d.forEach((tile, xy) => {
+            if (tile != undefined && d.Neighbours(xy).Values().every(n => n > tile)) {
+                basins.push(xy)
+            }
+        })
+
+        basins.map(basin => {
+            const b = new Set<string>().add(basin.toString())
+
+            for (const bb of b) {
+                d.Neighbours(XY.fromString(bb)).forEach((key, val) => (val < 9).IsTrue(() => b.add(key)))
+            }
+
+            return b.size
+        }).sort(Sorts.GreatestFirst).slice(0, 3).Product().Log()
+    }
 }
 const startTime = process.hrtime();
-Advent2021.Day8();
+Advent2021.Day9();
 const time = process.hrtime(startTime);
 `Ran in ${time[0]}s ${time[1]/1_000_000}ms`.Log();

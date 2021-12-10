@@ -75,6 +75,7 @@ require('./lib/Generator')
 require('./lib/Number')
 require('./lib/Object')
 require('./lib/String')
+require('./lib/XY')
 
 // require('./ProjectEuler')
 // require('./Advent2020')

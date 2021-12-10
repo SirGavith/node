@@ -15,6 +15,7 @@ interface Array<T> {
     IncrementOrCreate (index: number): void
     BinarySearch(search: (value: T, index: number) => boolean): T
     Permutations(): T[][]
+    RemoveUndefined(): NonNullable<T>[]
     Log(): Array<T>
 
     //String
@@ -139,6 +140,13 @@ Array.prototype.Permutations = function<T>() {
     permute(this)
 
     return result;
+}
+Array.prototype.RemoveUndefined = function<T>() {
+    const arr: NonNullable<T>[] = []
+    for (const v of this as T[]) {
+        if (v != undefined && v != null) arr.push(v as NonNullable<T>)
+    }
+    return arr
 }
 Array.prototype.Log = function() {
     console.log(this)
