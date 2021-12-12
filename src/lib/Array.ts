@@ -15,8 +15,12 @@ interface Array<T> {
     IncrementOrCreate (index: number): void
     BinarySearch(search: (value: T, index: number) => boolean): T
     Permutations(): T[][]
+    Frequency(val: T): number
+    Frequencies(): [T, number][]
     RemoveUndefined(): NonNullable<T>[]
     Median(): T
+    Max(): T
+    Min(): T
     Log(): Array<T>
 
     //String
@@ -142,6 +146,14 @@ Array.prototype.Permutations = function<T>() {
 
     return result;
 }
+Array.prototype.Frequency = function<T>(val: T) {
+    return (this as T[]).reduce((a, b) => a + (b === val ? 1 : 0), 0)
+}
+
+Array.prototype.Frequencies = function<T>() {
+    return (this as T[]).Uniques().map(u => [u, this.Frequency(u)])
+}
+
 Array.prototype.RemoveUndefined = function<T>() {
     const arr: NonNullable<T>[] = []
     for (const v of this as T[]) {
@@ -158,6 +170,12 @@ Array.prototype.Median = function() {
     else {
         return this.at(arr.length / 2)
     } 
+}
+Array.prototype.Max = function() {
+    return Math.max(...this)
+}
+Array.prototype.Min = function() {
+    return Math.min(...this)
 }
 Array.prototype.Log = function() {
     console.log(this)

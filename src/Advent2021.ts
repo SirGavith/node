@@ -2,7 +2,7 @@ import { Stack } from './lib/Stack'
 import { Array2D as Array2D, XY } from './lib/XY'
 import { Sorts, Files, Range } from './main'
 
-const UseExample = false,
+const UseExample = true,
     Data = Files.ReadAllLines(UseExample ? '../example.txt' : '../input.txt'),
     DataFull = Files.ReadFile(UseExample ? '../example.txt' : '../input.txt')
 
@@ -14,7 +14,6 @@ class Advent2021 {
                 return [p[0] + (c > p[1] ? 1 : 0), c]
             }, [0, Number.MAX_VALUE])[0].Log()
     }
-
     static Day2() {
         Data.map(s => s.split(' '))
             .reduce((p: number[], v) => {
@@ -26,7 +25,6 @@ class Advent2021 {
                 ]
             }, [0, 0, 0]).Log().slice(0, 2).Product().Log()
     }
-
     static Day3() {
         let oxygen = Data.Copy(),
             co2 = Data.Copy()
@@ -49,7 +47,6 @@ class Advent2021 {
 
         (oxygen[0].toInt(2) * co2[0].toInt(2)).Log()
     }
-
     static Day4() {
         const d = DataFull.split('\n\n'),
 
@@ -89,7 +86,6 @@ class Advent2021 {
             }
         }
     }
-
     static Day5() {
         const d = Data.map(d => {
                 const dd = d.split(' -> ').map(a => a.split(',').toIntArray())
@@ -122,7 +118,6 @@ class Advent2021 {
 
         map.flat().Count(c => c >= 2).Log()
     }
-
     static Day6_naive() {
         let school = Data[0].split(',').toIntArray().Log()
 
@@ -150,7 +145,6 @@ class Advent2021 {
         }
         school.Sum().Log()
     }
-
     static Day7() {
         const d = Data[0].split(',').toIntArray().Log()
 
@@ -164,8 +158,7 @@ class Advent2021 {
                 prev[0] > cur ? [cur, i] : prev,
             [Number.MAX_VALUE, 0]).Log()
     }
-
-    static Day8() {  //1.9s
+    static Day8() { 
         const d = Data.map(display => display.split(' | ')
             .map(d => d.split(' ').map(a => a.toArray()))),
             sevenSegs = {
@@ -198,7 +191,6 @@ class Advent2021 {
             throw new Error('Could not find successful permutation')
         }, 0).Log()
     }
-
     static Day9() {
         const d = Array2D.fromArray(Data.map(d => d.toArray().toIntArray())),
             basins: XY[] = []
@@ -213,7 +205,7 @@ class Advent2021 {
             const b = new Set<string>().add(basin.toString())
 
             for (const bb of b) {
-                d.Neighbours(XY.fromString(bb)).forEach((pos, height) => (height < 9).IsTrue(() => b.add(pos)))
+                d.Neighbours(XY.fromString(bb)).forEach(t => (t[1] < 9).IsTrue(() => b.add(t[0].toString())))
             }
 
             return b.size
@@ -246,8 +238,75 @@ class Advent2021 {
                 }[invertBracket[c]], 0)
         }).RemoveUndefined().Log().Median().Log()
     }
+    static Day11() {
+        interface Octopus {
+            energy: number
+            flashed: boolean
+        }
+        const octstep = (octopus : [XY, Octopus]) => {
+            const o = octopus[1]
+            if (!o.flashed && o.energy > 9) {
+                o.flashed = true
+
+                s.Neighbours(octopus[0], true).forEach(oo => {
+                    oo[1].energy++
+                    octstep(oo)
+                })
+            }
+        }
+
+        let s = Array2D.fromArray(Data.map(l => l.toArray().toIntArray())).map(e => ({energy: e!, flashed: false}))
+
+        for (let i = 1; ; i++) {
+            s.forEach(octopus => {
+                octopus!.flashed = false
+                octopus!.energy++
+            })
+
+            s.forEach((octopus, xy) => octstep([xy, octopus!]))
+
+            if (s.Array.flat().every(o => o?.flashed)) {
+                i.Log()
+                return
+            }
+
+            s.forEach(octopus => {
+                if(octopus!.flashed) {
+                    octopus!.energy = 0
+                }
+            })
+        }
+    }
+    static Day12() {
+        let d = Data.map(l => l.split('-')).flatMap(l => [l, l.Copy().reverse()]).Log(),
+            paths: string[][] = [],
+            step = (path: string[]) => {
+                d.forEach(cave => {
+                    if (cave[0] === path.at(-1)) {
+                        if (cave[1] === 'end') {
+                            paths.push(path.concat(cave[1]))
+                            return
+                        }
+                        else if (cave[1] === 'start') return
+                        else if (cave[1].IsAllCapital() || 
+                            //lower case
+                            !path.includes(cave[1]) ||
+                            //already been there once
+                            path.filter(c => !c.IsAllCapital()).Frequencies().map(tuple => tuple[1]).Max() < 2) {
+                            step(path.concat(cave[1]))
+                        }
+                    }
+                })
+            }
+
+        step(['start'])
+
+        paths.Log()
+        paths.length.Log()
+        
+    }
 }
-const startTime = process.hrtime();
-Advent2021.Day10();
-const time = process.hrtime(startTime);
-`Ran in ${time[0]}s ${time[1]/1_000_000}ms`.Log();
+const startTime = process.hrtime()
+Advent2021.Day12()
+const time = process.hrtime(startTime)
+console.log(`Ran in ${time[0]}s ${time[1]/1_000_000}ms`)

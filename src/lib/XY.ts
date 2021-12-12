@@ -82,8 +82,17 @@ export class XY {
         return combos
     }
 
-    Neighbours() {
-        return [
+    Neighbours(includeDiags = false) {
+        return includeDiags ? [
+            this.plus(-1, -1),
+            this.plus(-1, 0),
+            this.plus(-1, 1),
+            this.plus(0, -1),
+            this.plus(0, 1),
+            this.plus(1, -1),
+            this.plus(1, 0),
+            this.plus(1, 1),  
+        ] : [
             this.minus(1, 0),
             this.plus(1, 0),
             this.plus(0, 1),
@@ -101,7 +110,7 @@ export class XY {
 }
 
 export class Array2D<T> {
-    Array: T[][] = []
+    Array: (T | undefined)[][] = []
 
     constructor(public Size: XY) {
         for (let i = 0; i < Size.Y; i++)
@@ -114,12 +123,18 @@ export class Array2D<T> {
             undefined
     }
 
-    set(xy:XY, value: T) {
+    set(xy:XY, value: T | undefined) {
         this.Array[xy.Y][xy.X] = value
     }
 
-    Neighbours(xy: XY) {
-        return xy.Neighbours().map(n => [n, this.get(n)]).toObject().RemoveUndefinedVals() as {[xy: string]: T}
+    Copy() {
+        const arr = new Array2D<T>(this.Size)
+        arr.Array = this.Array.map(a => a.Copy())
+        return arr
+    }
+
+    Neighbours(xy: XY, includeDiags = false) {
+        return xy.Neighbours(includeDiags).map(n => [n, this.get(n)] as [XY, T | undefined]).filter(n => n[1] != undefined) as [XY, T][]
     }
 
     forEach(lambda: (value: T | undefined, index: XY) => void) {
@@ -129,6 +144,12 @@ export class Array2D<T> {
                 lambda(this.get(xy), xy)
             }
         }
+    }
+
+    map<TT>(lambda: (value: T | undefined, index: XY) => TT | undefined) {
+        const arr = new Array2D<TT>(this.Size)
+        this.forEach((val, xy) => arr.set(xy, lambda(val, xy)))
+        return arr
     }
     
     Flatten() {

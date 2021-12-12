@@ -7,6 +7,7 @@ interface String {
     RegexTest(regex: RegExp): boolean
     ReplaceMap(map: { [key: string]: string }): string
     RemoveChars(chars: string[]): string
+    IsAllCapital(): boolean
     Log(): string
 }
 
@@ -46,6 +47,9 @@ String.prototype.RemoveChars = function(chars: string[]) {
         string = string.replaceAll(char, '')
     })
     return string
+}
+String.prototype.IsAllCapital = function() {
+    return this.toArray().every(char => char === char.toUpperCase())
 }
 String.prototype.Log = function() {
     console.log(this)
