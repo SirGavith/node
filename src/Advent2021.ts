@@ -1,8 +1,9 @@
+import { exitCode } from 'process'
 import { Stack } from './lib/Stack'
 import { Array2D as Array2D, XY } from './lib/XY'
 import { Sorts, Files, Range } from './main'
 
-const UseExample = true,
+const UseExample = false,
     Data = Files.ReadAllLines(UseExample ? '../example.txt' : '../input.txt'),
     DataFull = Files.ReadFile(UseExample ? '../example.txt' : '../input.txt')
 
@@ -278,35 +279,66 @@ class Advent2021 {
         }
     }
     static Day12() {
-        let d = Data.map(l => l.split('-')).flatMap(l => [l, l.Copy().reverse()]).Log(),
-            paths: string[][] = [],
+        let d = Data.map(l => l.split('-')),
+            dFull = d.flatMap(l => [l, l.Copy().reverse()]),
+            adjacents: {[node: string]: string[]} = d.flat().Uniques().Log().map(node => [node, dFull.filter(edge => edge[0]===node).map(e => e[1]).filter(e => e != 'start')]).toObject().Log()
+
+        let paths = 0,
             step = (path: string[]) => {
-                d.forEach(cave => {
-                    if (cave[0] === path.at(-1)) {
-                        if (cave[1] === 'end') {
-                            paths.push(path.concat(cave[1]))
-                            return
-                        }
-                        else if (cave[1] === 'start') return
-                        else if (cave[1].IsAllCapital() || 
-                            //lower case
-                            !path.includes(cave[1]) ||
-                            //already been there once
-                            path.filter(c => !c.IsAllCapital()).Frequencies().map(tuple => tuple[1]).Max() < 2) {
-                            step(path.concat(cave[1]))
-                        }
+                for (const cave of adjacents[path.at(-1)!]) {
+                    if (cave === 'end') {
+                        paths++
+                        continue
                     }
-                })
+                    else if (cave.charCodeAt(0) <= 90 ||
+                        //lower case
+                        !path.includes(cave) ||
+                        //already been there once
+                        path.filter(c => c.charCodeAt(0) >= 97).MaxFrequency() < 2) {
+
+                        step(path.concat(cave))
+                    }
+                }
             }
 
         step(['start'])
 
         paths.Log()
-        paths.length.Log()
+    }
+    static Day13() {
+        let [ps, fs] = DataFull.split('\n\n').map(n => n.SplitLines())
+        const pairs = ps.map(d => d.split(',').toIntArray() as [number, number]),
+            folds = fs.map(f => f.split(' ').at(-1)!.split('=') as [string, string])
+
+        let paper = new Array2D<boolean>(new XY(
+            pairs.map(p => p[0]).Max() + 1,
+            pairs.map(p => p[1]).Max() + 1))
         
+        pairs.forEach(pair => paper.set(new XY(pair[0], pair[1]), true))
+
+        for (const fold of folds) {
+            const newPaper = new Array2D<boolean>(new XY(
+                fold[0]==='x'?(paper.Size.X-1)/2 : paper.Size.X,
+                fold[0]==='y'?(paper.Size.Y-1)/2 : paper.Size.Y))
+
+            paper.forEach((dot, xy) => {
+                const foldPos = fold[1].toInt()
+                if (dot) {
+                    newPaper.set(
+                        fold[0] === 'x'
+                            ? (xy.X > foldPos ? new XY(foldPos-(xy.X-foldPos), xy.Y) : xy)
+                            : (xy.Y > foldPos ? new XY(xy.X, foldPos-(xy.Y-foldPos)) : xy),
+                        dot)
+                }
+            })
+            paper = newPaper
+        }
+
+        paper.Log()
+
     }
 }
 const startTime = process.hrtime()
-Advent2021.Day12()
+Advent2021.Day13()
 const time = process.hrtime(startTime)
 console.log(`Ran in ${time[0]}s ${time[1]/1_000_000}ms`)

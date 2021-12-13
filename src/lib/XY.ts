@@ -112,9 +112,9 @@ export class XY {
 export class Array2D<T> {
     Array: (T | undefined)[][] = []
 
-    constructor(public Size: XY) {
+    constructor(public Size: XY, fillValue: T|undefined = undefined) {
         for (let i = 0; i < Size.Y; i++)
-            this.Array.push(Array(Size.X).fill(undefined))
+            this.Array.push(Array(Size.X).fill(fillValue))
     }
 
     get(xy:XY) {
@@ -160,6 +160,12 @@ export class Array2D<T> {
             }
         })
         return l
+    }
+
+    Log() {
+        console.log()
+        this.Array.map(r => r.map(t => t ? '#' : '.').join('')+ '     ').Log()
+        return this
     }
 
     static fromArray<T>(arr: T[][]) {

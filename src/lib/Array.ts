@@ -17,6 +17,7 @@ interface Array<T> {
     Permutations(): T[][]
     Frequency(val: T): number
     Frequencies(): [T, number][]
+    MaxFrequency(): number
     RemoveUndefined(): NonNullable<T>[]
     Median(): T
     Max(): T
@@ -153,7 +154,12 @@ Array.prototype.Frequency = function<T>(val: T) {
 Array.prototype.Frequencies = function<T>() {
     return (this as T[]).Uniques().map(u => [u, this.Frequency(u)])
 }
-
+Array.prototype.MaxFrequency = function<T>() {
+    return (this as T[]).Uniques().reduce((max, u) => {
+        const freq = this.Frequency(u)
+        return freq > max? freq : max
+    }, 0)
+}
 Array.prototype.RemoveUndefined = function<T>() {
     const arr: NonNullable<T>[] = []
     for (const v of this as T[]) {
