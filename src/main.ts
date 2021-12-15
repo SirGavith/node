@@ -77,6 +77,7 @@ require('./lib/Object')
 require('./lib/String')
 require('./lib/XY')
 require('./lib/Stack')
+require('./lib/LinkedList')
 
 // require('./ProjectEuler')
 // require('./Advent2020')
@@ -84,3 +85,5 @@ require('./Advent2021')
 // require('./Linguistics')
 // require('./geology')
 // require('./Emulator')
+// require('./Compiler')
+// 

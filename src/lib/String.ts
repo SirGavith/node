@@ -11,10 +11,10 @@ interface String {
     Log(): string
 }
 
-String.prototype.toIntList = function(radix = 10) {
+String.prototype.toIntList = function(radix?: number) {
     return this.split('\n').map(n => parseInt(n, radix))
 }
-String.prototype.toInt = function(radix = 10) {
+String.prototype.toInt = function(radix?: number) {
     return parseInt(this.valueOf(), radix)
 }
 String.prototype.toArray = function(includeNewlines = true) {

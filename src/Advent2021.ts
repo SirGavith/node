@@ -1,4 +1,5 @@
 import { exitCode } from 'process'
+import { LinkedList, LinkedNode } from './lib/LinkedList'
 import { Stack } from './lib/Stack'
 import { Array2D as Array2D, XY } from './lib/XY'
 import { Sorts, Files, Range } from './main'
@@ -306,8 +307,8 @@ class Advent2021 {
         paths.Log()
     }
     static Day13() {
-        let [ps, fs] = DataFull.split('\n\n').map(n => n.SplitLines())
-        const pairs = ps.map(d => d.split(',').toIntArray() as [number, number]),
+        const [ps, fs] = DataFull.split('\n\n').map(n => n.SplitLines()),
+            pairs = ps.map(d => d.split(',').toIntArray() as [number, number]),
             folds = fs.map(f => f.split(' ').at(-1)!.split('=') as [string, string])
 
         let paper = new Array2D<boolean>(new XY(
@@ -335,10 +336,109 @@ class Advent2021 {
         }
 
         paper.Log()
+    }
+    static Day14() {
+        const [template, r] = DataFull.split('\n\n').map(p => p.SplitLines()),
+            polymer = template[0].Log().toArray(),
+            rules = r.map(rule => rule.split(' -> ')).toObject().Log() as {[key: string]: string},
+            freqs: {[key: string]:number} = {}
 
+        polymer.forEach(e => {
+            if(freqs[e]) freqs[e]++
+            else freqs[e] = 1
+        })
+        for (let i = 0; i < 20; i++) {
+            polymer.reduceRight((_, char, i) => {
+                if (i === polymer.length - 1) return 0
+
+                const e = rules[char+polymer[i+1]]
+                polymer.splice(i+1, 0, e)
+
+                if(freqs[e]) freqs[e]++
+                else freqs[e] = 1
+
+                return 0
+            }, 0)
+            console.log(i, polymer.length)
+        }
+
+        const f = freqs.Values();
+        (f.Max() - f.Min()).Log()
+    }
+    static Day14_revised() {
+        const [template, r] = DataFull.split('\n\n').map(p => p.SplitLines()),
+            poly = template[0].Log().toArray(),
+            rules = r.map(rule => rule.split(' -> ')).toObject().Log() as {[key: string]: string},
+            polymer = new LinkedList<string>(),
+            freqs: {[key: string]:number} = {}
+
+
+        poly.forEach(char => {
+            polymer.Push(new LinkedNode(char))
+        })
+
+        poly.forEach(e => {
+            if(freqs[e]) freqs[e]++
+            else freqs[e] = 1
+        })
+
+        polymer.toString().Log()
+
+        for (let i = 0; i < 40; i++) {
+            let node = polymer.Head
+            while (node?.Next) {
+                const e = rules[node.Value + node.Next.Value]
+                if (!e) throw new Error('could not find rule')
+                node.InsertAfter(new LinkedNode(e))
+                node = node.Next.Next
+
+                if(freqs[e]) freqs[e]++
+                else freqs[e] = 1
+            }
+            i.Log()
+            freqs.Log()
+        }
+
+        const f = freqs.Values();
+        (f.Max() - f.Min()).Log()
+    }
+    static Day14_revised_revised() {
+        const [template, r] = DataFull.split('\n\n').map(p => p.SplitLines()),
+            rules = r.map(rule => rule.split(' -> ')).toObject() as {[key: string]: string},
+            emptyFreqs = rules.Keys().map(v => [v, 0]),
+            letterfreqs: {[key: string]: number} = {}
+
+        let freqs: {[key: string]:number} = emptyFreqs.toObject()
+
+        template[0].toArray().forEach((e, i, a) => {
+            letterfreqs.IncrementOrCreate(e)
+            if (i+1!==a.length)
+                freqs.IncrementOrCreate(e+a[i+1])
+        })
+
+        const time = process.hrtime(startTime)
+        console.log(`half in ${time[0]}s ${time[1]/1_000_000}ms`)
+
+        for (let i = 0; i < 40; i++) {
+            const newFreqs = emptyFreqs.toObject() as {[key: string]: number}
+            for (const [pair, count] of freqs.Entries().filter(t => t[1] > 0)) {
+                const e = rules[pair]
+                newFreqs[pair.charAt(0)+e] += count
+                newFreqs[e+pair.charAt(1)] += count
+
+                letterfreqs.IncrementOrCreate(e, count)
+            }
+            freqs = newFreqs
+        }
+
+        const time2 = process.hrtime(startTime)
+        console.log(`looped in ${time2[0]}s ${time2[1]/1_000_000}ms`)
+
+        const f = letterfreqs.Values();
+        (f.Max() - f.Min()).Log()
     }
 }
 const startTime = process.hrtime()
-Advent2021.Day13()
+Advent2021.Day14_revised_revised()
 const time = process.hrtime(startTime)
 console.log(`Ran in ${time[0]}s ${time[1]/1_000_000}ms`)

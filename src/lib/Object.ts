@@ -5,8 +5,11 @@ interface Object {
     Entries(): [string, any][]
     filter(filter: (key: string, val: any) => boolean): {}
     forEach(lambda: (key: string, val: any) => void): void
+    Copy(): {}
+    IncrementOrCreate (key: string, value?: number): void
     Log(): {}
 }
+type FreqDict = {[key:string]: number}
 
 Object.prototype.Keys = function() {
     return Object.keys(this)
@@ -17,9 +20,15 @@ Object.prototype.Values = function() {
 Object.prototype.Entries = function() {
     return Object.entries(this)
 }
-
+Object.prototype.Copy = function() {
+    return this.Entries().toObject()
+}
 Object.prototype.RemoveUndefinedVals = function() {
     return this.filter((key, val) => val != undefined)
+}
+Object.prototype.IncrementOrCreate = function(key: string, value = 1) {
+    if ((this as FreqDict)[key]) (this as FreqDict)[key] += value
+    else (this as FreqDict)[key] = value
 }
 Object.prototype.filter = function(filter: (key: string, val: any) => boolean) {
     const out: {[key: string]: any} = {}

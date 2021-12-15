@@ -1,98 +1,113 @@
-class Byte {
+export class Word {
     private value = 0
     get Value() {
         return this.value
     }
     set Value(val: number) {
-        if (val >= 0 && val < 256) {
+        if (val >= 0 && val < Math.pow(2, this.capacity)) {
             this.value = val
         }
     }
-    constructor(n?: number) {
-        this.Value = n ?? 0
-    }
-}
-class Word {
-    private value = 0
-    get Value() {
-        return this.value
-    }
-    set Value(val: number) {
-        if (val >= 0 && val < Math.pow(2, 16)) {
-            this.value = val
+    set (val: Word) {
+        if (val.Value >= 0 && val.Value < Math.pow(2, this.capacity)) {
+            this.value = val.Value
         }
+        else throw new Error('out of range')
     }
-    constructor(n?: number) {
-        this.Value = n ?? 0
+    toString() {
+        return '0x'+this.Value.toString(16).padStart(4,'0')
+    }
+    constructor(private capacity: number, value = 0) { this.Value = value }
+}
+
+const instructions = [
+    'LDA',
+    'STO',
+    'ADD',
+    'SUB',
+    'JMP',
+    'JGE',
+    'JNE',
+    'STP'
+]
+
+// function Disassemble(assembly: Word[]) {
+    
+//     assembly.forEach(instr => {
+//         const opcode = instr.Value >>> 12,
+//             memAddress = instr.Value & 0x0FFF;
+
+//         `| ${instructions[opcode]} ${memAddress}: (${ram[memAddress].toString()}) || ${instr}`.Log()
+
+//     })
+// }
+function DisassembleInstr(memory: Word[], Registers: {[reg: string]: Word}) {
+    const instr = Registers.IR,
+        opcode = instr.Value >>> 12,
+        memAddress = instr.Value & 0x0FFF,
+        instrmapped = instructions[opcode]
+    switch (instrmapped) {
+        case 'LDA': return `LDA ${memAddress}: (${memory[memAddress].toString()})`
+        case 'STO': return `STO ${memAddress} => ${memory[memAddress].toString()}`
+        case 'ADD': return `ADD ${memAddress}: +${memory[memAddress].toString()} => ${Registers.ACC.toString()}`
+        case 'SUB': return `SUB ${memAddress}: -${memory[memAddress].toString()} => ${Registers.ACC.toString()}`
+        case 'JMP': return `JMP ${memAddress}: ${Registers.PC}`
+        case 'JGE': return `JGE ${memAddress}: ${Registers.PC}`
+        case 'JNE': return `JNE ${memAddress}: ${Registers.PC}`
+        case 'STP': return `STP`
     }
 }
 
-const Registers = {
-    PC: new Word(),
-    IR: new Word(),
-    ACC: new Word(),
-}
+export function Execute(ram: Word[]) {
 
-function Evaluate(word: Word) {
-    const opcode = word.Value >>> 12,
-        memAddress = word.Value & 0x0FFF
-    switch (opcode) {
-        case 0: //LDA - Load Address
-            Registers.ACC = ram[memAddress]
-            break
-        case 1: //STO - Store Value
-            ram[memAddress] = Registers.ACC
-            break
-        case 2: //ADD - Add
-            Registers.ACC.Value = Registers.ACC.Value + ram[memAddress].Value
-            break
-        case 3: //SUB - Subtract
-            Registers.ACC.Value = Registers.ACC.Value - ram[memAddress].Value
-            break
-        case 4: //JMP - Jump
-            Registers.PC = memAddress.Value
-            break
-        case 5: //JGE
-            if (Registers.ACC.Value >= 0)
-                Registers.PC = memAddress
-            break
-        case 6: //JNE
-            if (Registers.ACC.Value != 0)
-                Registers.PC = memAddress
-            break
-        case 7: //STP - Stop
-            Running = false
-            break
+    const Registers: {[reg: string]: Word} = {
+        PC: new Word(12), // Program Counter
+        IR: new Word(16), // Instruction Register
+        ACC: new Word(16),// Accumulator
     }
-}
 
+    let Running = true,
+        maxSteps = 25
 
-const ram: Word[] = [
-    0x0004,
-    0x20A5,
-    0x1006,
-    0x7000,
-    0x000A,
-    0x0001,
-    0x0000
-].map(n => new Word(n))
+    for (let i = 0; Running && i < maxSteps; i++) {
+        //FETCH
+        Registers.IR.set(ram[Registers.PC.Value])
+        Registers.PC.Value++
 
-let Running = true
-while (true) {
+        //EXEC
+        const opcode = Registers.IR.Value >>> 12,
+            memAddress = Registers.IR.Value & 0x0FFF
 
-    //FETCH
-    //fetch instruction from memory at PC; write it to IR
-    //pc++
+        switch (opcode) {
+            case 0: //LDA - Load Address
+                Registers.ACC.set(ram[memAddress])
+                break
+            case 1: //STO - Store Value
+                ram[memAddress] = Registers.ACC
+                break
+            case 2: //ADD - Add
+                Registers.ACC.Value = Registers.ACC.Value + ram[memAddress].Value
+                break
+            case 3: //SUB - Subtract
+                Registers.ACC.Value = Registers.ACC.Value - ram[memAddress].Value
+                break
+            case 4: //JMP - Jump
+                Registers.PC.Value = memAddress
+                break
+            case 5: //JGE - Jump if >0
+                if (Registers.ACC.Value >= 0)
+                    Registers.PC.Value = memAddress
+                break
+            case 6: //JNE - Jump if !=0
+                if (Registers.ACC.Value != 0)
+                    Registers.PC.Value = memAddress
+                break
+            case 7: //STP - Stop
+                Running = false
+                break
+        }
 
-    //EXEC
-    //instruction opcode is decoded
-    //instruction is executed
-
-
-        //get operands from memory
-        //perform operation
-        //write result
-    Evaluate()
-
-    if (!Running) break
+        DisassembleInstr(ram, Registers)?.Log()
+        ram.map(w => w.toString()).Log()
+    }
 }

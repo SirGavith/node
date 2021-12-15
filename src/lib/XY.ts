@@ -164,7 +164,7 @@ export class Array2D<T> {
 
     Log() {
         console.log()
-        this.Array.map(r => r.map(t => t ? '#' : '.').join('')+ '     ').Log()
+        this.Array.map(r => r.map(t => t ? '█' : ' ').join('')+ '     ').Log()
         return this
     }
 
