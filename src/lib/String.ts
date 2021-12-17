@@ -8,9 +8,12 @@ interface String {
     ReplaceMap(map: { [key: string]: string }): string
     RemoveChars(chars: string[]): string
     IsAllCapital(): boolean
+    forEach(lambda: (val: string, index: number) => void): void
     Log(): string
 }
-
+String.prototype.forEach = function(lambda: (val: string, index: number) => void) {
+    this.toArray().forEach((v, i) => lambda(v, i))
+}
 String.prototype.toIntList = function(radix?: number) {
     return this.split('\n').map(n => parseInt(n, radix))
 }

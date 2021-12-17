@@ -1,3 +1,5 @@
+import { parse } from 'path/posix';
+import { threadId } from 'worker_threads';
 import { Word, Execute } from './Emulator'
 const instructions = [
     'LDA',
@@ -13,13 +15,10 @@ const instructions = [
 class CompilerError extends Error {constructor(message: string) { super(message); this.name = this.constructor.name}}
 class AssemblerError extends Error {constructor(message: string) { super(message); this.name = this.constructor.name}}
 
-function Compile(c: string) {
+function PreAssemble(c: string) {
     const code = c.SplitLines().filter(l => l.RegexTest(/\s*/)).map(l => l.trim())
-
     //generate assembly for assembly lines
     
-
-
     const assembly = code.filter(line => line.split(' ').some(s => instructions.includes(s))),
         allocs = code.filter(line => line.startsWith('alloc'))
     //allocate memory words for all allocs
@@ -57,7 +56,7 @@ function Compile(c: string) {
     return assembly
 }
 
-function Assemble(assembly: string[]) { 
+function Assemble(assembly: string[]) {
     //to bytecode
     const bytecode: Word[] = assembly.map(line => {
         const spl = line.split(' ')
@@ -77,29 +76,100 @@ function Assemble(assembly: string[]) {
     return bytecode
 }
 
-const assembly = Compile(`
-    alloc var1 := 0x4
-    alloc var2 := 0x1
+// const assembly = PreAssemble(`
+//     alloc var1 := 0x4
+//     alloc var2 := 0x1
     
-    @start LDA var1
-    SUB var2
-    STO var1
-    LDA var1
-    JNE start
-    STP
-`),
-    bytecode = Assemble(assembly)
+//     @start LDA var1
+//     SUB var2
+//     STO var1
+//     LDA var1
+//     JNE start
+//     STP
+// `),
+//     bytecode = Assemble(assembly)
 
-Execute(bytecode);
+// Execute(bytecode);
 
-`
-var v1 := 4
-var v2 := 1
+// var v1 := 4
+// var v2 := 1
 
-@start {
-    @start var1 = var1 - var2
+// @start {
+//     @start var1 = var1 - var2
+// }
+
+
+// let a = 4,
+//     b = 1
+// if (a > b) {
+//     a++
+// }
+// else {
+//     a--
+// }
+// b += a
+
+function Lexer(c: string) {
+    const code = c.replaceAll(/\s/g, '').Log(),
+        parseExpr = (code: string) => {
+            let out: string[] = [],
+                lastsemi = 0,
+                exprLevel = 0
+            code.forEach((char, i) => {
+                if (char === '{') exprLevel++
+                else if (char === '}') exprLevel--
+                else if (char === ';' && exprLevel === 0) {
+                    out.push(code.substring(lastsemi, i))
+                    lastsemi = i + 1
+                }
+            })
+            return out.Log()
+        }
+    const parsed = parseExpr(code)
+
+    parsed.map(expr => {
+        let word;
+        for (const [char, i] of expr.toArray().map((c, i) => [c, i] as [string, number])) {
+            if (char.RegexTest(/\W/g)) {
+                word = expr.slice(0, i).Log()
+                return
+            }
+        }
+
+
+        if (expr.startsWith('let:')) {
+            //declaration
+        }
+        else if (expr.startsWith('if')) {
+            //if
+        }
+        else if (expr.startsWith('while')) {
+            //while
+        }
+        else if (identifiers.includes())
+    })
+
+
+
     
 
 }
 
-`
+Lexer(`
+let: a = 4;
+let: b = 1;
+if(a > b){
+    a++;
+} else{
+    a--;
+};
+b += a;
+
+while (b > 0) {
+    b--;
+};
+`)
+
+/*
+
+*/

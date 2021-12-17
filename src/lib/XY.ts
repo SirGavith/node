@@ -163,9 +163,26 @@ export class Array2D<T> {
     }
 
     Log() {
-        console.log()
-        this.Array.map(r => r.map(t => t ? '█' : ' ').join('')+ '     ').Log()
+        // this.Array.map(r => r.map(t => t ? '█' : ' ').join('')+ '     ').Log()
+        // console.log(this)
+
+        console.log('[')
+        this.Array.forEach(row => {
+            console.log('| '+row.map(v => (v === undefined ? '' : typeof v === "number" && v === Infinity ? '∞' : String(v)).padStart(3)).join())
+        })
+        console.log(']')
+
+
+
         return this
+    }
+
+    Entries() {
+        const arr: [XY, T][] = []
+        this.forEach((val, xy) => {
+            if (val) arr.push([xy, val])
+        })
+        return arr
     }
 
     static fromArray<T>(arr: T[][]) {

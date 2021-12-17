@@ -77,7 +77,6 @@ export function Execute(ram: Word[]) {
         //EXEC
         const opcode = Registers.IR.Value >>> 12,
             memAddress = Registers.IR.Value & 0x0FFF
-
         switch (opcode) {
             case 0: //LDA - Load Address
                 Registers.ACC.set(ram[memAddress])

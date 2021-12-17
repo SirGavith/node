@@ -1,4 +1,4 @@
-import { exitCode } from 'process'
+import { watchFile } from 'fs'
 import { LinkedList, LinkedNode } from './lib/LinkedList'
 import { Stack } from './lib/Stack'
 import { Array2D as Array2D, XY } from './lib/XY'
@@ -437,8 +437,269 @@ class Advent2021 {
         const f = letterfreqs.Values();
         (f.Max() - f.Min()).Log()
     }
+    static Day15() {
+        const d = Array2D.fromArray(Data.map(l => l.toArray().toIntArray())),
+            lastE = d.Size.minus(1)
+        let smallestPath = Number.MAX_VALUE,
+            steps = 0
+        const bestRoute = (xy: XY, score = 0) => {
+            if (score > smallestPath) return
+        
+            if (xy.EQ(lastE)) {
+                if (score < smallestPath) {
+                    smallestPath = score
+                    console.log('Smallest:', score)
+                    steps++
+                }
+                return
+            }
+
+            const xp = xy.plus(1, 0),
+                yp = xy.plus(0, 1),
+
+                xVal = d.get(xp),
+                yVal = d.get(yp)
+
+            if (xVal && yVal) {
+                if (xVal > yVal) {
+                    bestRoute(yp, score + yVal)
+                    bestRoute(xp, score + xVal)
+                } 
+                else {
+                    bestRoute(xp, score + xVal)
+                    bestRoute(yp, score + yVal)
+                }
+            }
+            else {
+                if (xVal) bestRoute(xp, score + xVal)
+                if (yVal) bestRoute(yp, score + yVal)
+            }            
+        }
+
+
+        d.Log()    
+        bestRoute(new XY)
+        console.log(steps, 'steps')   
+
+    }
+    static Day15_revised() {
+        const d = Array2D.fromArray(Data.map(l => l.toArray().toIntArray())),
+            bestScore: Array2D<number> = new Array2D(d.Size),
+            lastE = d.Size.minus(1)
+
+        let n = [lastE.minus(1, 0), lastE.minus(0, 1)]
+
+        bestScore.set(lastE, d.get(lastE))
+
+        // d.Log() 
+        // bestScore.Log()
+
+        main_loop: while (true) {
+            const newN: XY[] = []
+            for (const xy of n) {
+                bestScore.set(xy, [
+                    bestScore.get(xy.plus(1, 0)),
+                    bestScore.get(xy.plus(0, 1))]
+                        .RemoveUndefined().Min() + d.get(xy)!
+                )
+                const left = xy.minus(1, 0)
+                if (left.X >= 0) newN.push(left)
+                else if (xy.EQ(new XY)) break main_loop
+            }
+            const up = n.at(-1)!.minus(0, 1)
+            if (up.Y >= 0) newN.push(up)
+
+            n = newN
+            bestScore.Log()
+        }
+
+        [bestScore.get(new XY(1, 0)),
+        bestScore.get(new XY(0, 1))].Min()?.Log()
+    }
+    static Day15_revised_revised() {
+        const d = Array2D.fromArray(Data.map(l => l.toArray().toIntArray())),
+            bestScore: Array2D<number> = new Array2D(d.Size),
+            lastE = d.Size.minus(1)
+
+        bestScore.set(new XY, 0)
+
+        d.Log()
+
+        // for (let i = 1; ; i++) {
+        //     for (let j = 0; j < i + 1; j++) {
+        //         const xy = new XY(i - j, j),
+        //             val = d.get(xy)!
+        //         if (!val) continue
+
+        //         const min = [
+        //             bestScore.get(xy.minus(1, 0)),
+        //             bestScore.get(xy.minus(0, 1)),
+        //         ].RemoveUndefined().Min()
+
+        //         bestScore.set(xy, val + min)
+        //         if (xy.EQ(lastE)) {
+        //             bestScore.Log()
+
+        //             console.log(val + min)
+        //             return
+        //         }
+        //     }
+        //     bestScore.Log()
+        // }
+    }
+    static Day15_revised_revised_revised() {
+
+        interface Node {
+            distance: number
+            visited: boolean
+            weight: number
+        }
+
+        const d = Array2D.fromArray(
+            Data.map(l =>
+                l.toArray().toIntArray().map(e =>
+                    ({weight: e, visited: false, distance: Number.POSITIVE_INFINITY} as Node))))
+            
+        
+        const dd = new Array2D<Node>(d.Size.times(5)),
+            lastE = dd.Size.minus(1)
+
+        d.forEach((val, xy) => {
+            if (!val) return
+
+            for (let i = 0; ; i++) {
+
+                for (let j = 0; j < i + 1; j++) {
+                    const newxy = new XY(i - j, j)
+                    
+                    if (newxy.IsLessBoth(new XY(5))) {
+                        dd.set(newxy.times(d.Size).plus(xy), val.Copy() as Node)
+                        if (newxy.EQ(new XY(4))) return
+                    }
+                }
+                // dd.map(val => val?.weight).Log()
+
+                val.weight++
+                if (val.weight % 10 === 0)
+                    val.weight = 1
+
+            }
+        })
+
+        dd.map(val => val?.weight).Log()
+
+        const unvistied = dd.Entries().filter(n => !n[1].visited)
+        dd.get(new XY)!.distance = 0
+        
+        let currentNode = new XY
+        for (let i = 0; ; i++) {
+            if (currentNode.EQ(lastE)) {
+                dd.get(currentNode)!.distance.Log()
+                break
+            }
+
+            const node = dd.get(currentNode)!;
+
+            [currentNode.plus( 1, 0),
+            currentNode.plus(-1,  0),
+            currentNode.plus( 0,  1),
+            currentNode.plus( 0, -1)]
+                .forEach(neighbour => {
+                    const n = dd.get(neighbour)
+                    if (n && !n.visited) {
+                        n.distance = [n.distance, node.distance + n.weight].Min()
+                    }
+                })
+            node.visited = true
+            unvistied.splice(unvistied.findIndex(val => val[0].EQ(currentNode)), 1)
+            
+            currentNode = unvistied.reduce((least, val) => {
+                if (val[1].distance < least[1].distance) least = val
+                return least
+            }, [new XY, {distance: Number.MAX_VALUE}] as [XY, Node])[0]
+
+
+            dd.map(e => e?.distance).Log()
+            if (unvistied.length % 100 === 0)
+                unvistied.length.Log()
+        }
+    }
+    static Day16() {
+        const line = Data[0].toArray().map(char => char.toInt(16).toString(2).padStart(4, '0')).join('')
+
+        class Packet {
+            Version: number
+            TypeId: number
+            LiteralValue?: number
+            SubPackets: Packet[] = []
+
+            private Position: number
+
+            constructor(bits: string, position = 0) {
+                this.Version = bits.slice(position, position + 3).toInt(2)
+                this.TypeId = bits.slice(position + 3, position + 6).toInt(2)
+                this.Position = position + 6
+
+                if (this.TypeId === 4) {
+                    //literal
+                    const values = []
+                    do {
+                        values.push(bits.slice(this.Position, this.Position += 5))
+                    } while (values.at(-1)!.charAt(0) === '1')
+
+                    this.LiteralValue = values.map(v => v.slice(1)).join('').toInt(2)
+                }
+                else {
+                    //operator
+                    const lenType = bits.charAt(this.Position++).toInt(),
+                        lenTypeSize = lenType === 0 ? 15 : 11,
+                        subPacketSize = bits.slice(this.Position, this.Position += lenTypeSize).toInt(2)
+
+                    let p: Packet | undefined
+                    do {
+                        p = new Packet(bits, p?.Position ?? this.Position)
+                        this.SubPackets.push(p)
+                    } while ((lenType === 0 ? p.Position - this.Position : this.SubPackets.length) < subPacketSize)
+
+                    this.Position = p.Position
+                }
+            }
+
+            SumVersions: () => number = () => this.Version + this.SubPackets?.reduce((a, v) => a + v.SumVersions(), 0) ?? 0
+
+            Operate(): number {
+                if (this.LiteralValue) return this.LiteralValue
+
+                const children = this.SubPackets!.map(p => p.Operate())
+
+                switch (this.TypeId) {
+                    case 0: //sum
+                        return children.Sum()
+                    case 1: //product
+                        return children.Product()
+                    case 2: //minimum
+                        return children.Min()
+                    case 3: //maximum
+                        return children.Max()
+                    case 5: //greaterThan
+                        return children[0] > children[1] ? 1 : 0
+                    case 6: //lessThan
+                        return children[0] < children[1] ? 1 : 0
+                    case 7: //equalTo
+                        return children[0] === children[1] ? 1 : 0
+                    default:
+                        throw new Error('Bad TypeId ' + this.TypeId)
+                }
+            }
+        }
+
+        const packets = new Packet(line)
+        packets.Log()
+        packets.Operate().Log()
+        packets.SumVersions().Log()
+    }
 }
 const startTime = process.hrtime()
-Advent2021.Day14_revised_revised()
+Advent2021.Day16()
 const time = process.hrtime(startTime)
 console.log(`Ran in ${time[0]}s ${time[1]/1_000_000}ms`)
