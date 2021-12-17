@@ -65,15 +65,25 @@ export class XY {
 
     get Least() { return this.X > this.Y ? this.Y : this.X }
     get Greatest() { return this.X < this.Y ? this.Y : this.X }
+    get LeastAbs() { return Math.abs(this.X) > Math.abs(this.Y) ? this.Y : this.X }
+    get GreatestAbs() { return Math.abs(this.X) < Math.abs(this.Y) ? this.Y : this.X }
 
     toArray() { return [this.X, this.Y] }
     toString() { return `${this.X}, ${this.Y}` }
-    copy() { return new XY(this.X, this.Y) }
+    Copy() { return new XY(this.X, this.Y) }
 
-    foreachCombination(lambda: (xy: XY) => void) {
-        for (let x = 0; x < this.X; x++)
-            for (let y = 0; y < this.Y; y++)
+    foreachCombination(lambda: (xy: XY) => void, startXY = new XY) {
+        for (let x = startXY.X; x <= this.X; x++)
+            for (let y = startXY.Y; y <= this.Y; y++)
                 lambda(new XY(x, y))
+    }
+
+    CountCombinations(lambda: (xy: XY) => boolean, startXY = new XY) {
+        let count = 0
+        this.foreachCombination(xy => {
+            if(lambda(xy)) count++
+        }, startXY)
+        return count
     }
 
     Combinations() {
@@ -106,6 +116,10 @@ export class XY {
     
     static fromString(s: string) {
         return new XY(...s.split(', ').toIntArray() as [number, number])
+    }
+
+    static fromTuple(t: [number, number]) {
+        return new XY(t[0], t[1])
     }
 }
 

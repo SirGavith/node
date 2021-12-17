@@ -1,4 +1,3 @@
-import { watchFile } from 'fs'
 import { LinkedList, LinkedNode } from './lib/LinkedList'
 import { Stack } from './lib/Stack'
 import { Array2D as Array2D, XY } from './lib/XY'
@@ -37,9 +36,6 @@ class Advent2021 {
                 .MostCommon()
         ).Log()
 
-        // for (let i = 0; oxygen.length > 1; i++) {
-            
-        // }
         for (let i = 0; co2.length > 1; i++) {
             const mc = co2.map(x => x[i])
                 .sort((a,b) => a.toInt() - b.toInt())
@@ -698,8 +694,34 @@ class Advent2021 {
         packets.Operate().Log()
         packets.SumVersions().Log()
     }
+    static Day17() {
+        const t = Data[0].split(': ')[1].split(', ').map(p => XY.fromTuple(p.slice(2).split('..').toIntArray() as [number, number])),
+            target: [XY, XY] = [new XY(t[0].Least, t[1].Least), new XY(t[0].Greatest, t[1].Greatest)]
+
+        const IsValid = (velocity: XY) => {
+            const position = new XY
+            while (position.X < target[1].X && position.Y > target[0].Y) {
+                position.plusEQ(velocity)
+                velocity.plusEQ(
+                    velocity.X > 0 ? -1 : velocity.X === 0 ? 0 : 1,
+                    -1)
+
+                if (position.WithinBounds(...target)) return true
+            } 
+            return false
+        }
+
+        const xy = new XY
+        while (!xy.X.SumOfLess().InRangeEq(target[0].X, target[1].X)) xy.X++
+        while (xy.Y + 1 < Math.abs(target[0].Y)) xy.Y++
+
+        //x must be in rangeEQ(x, tuple[1].X)
+        //y must be in rangeEQ(tuple[0].Y, y)
+
+        new XY(target[1].X, xy.Y).CountCombinations(xy => IsValid(xy), new XY(xy.X, target[0].Y)).Log()
+    }
 }
 const startTime = process.hrtime()
-Advent2021.Day16()
+Advent2021.Day17()
 const time = process.hrtime(startTime)
 console.log(`Ran in ${time[0]}s ${time[1]/1_000_000}ms`)

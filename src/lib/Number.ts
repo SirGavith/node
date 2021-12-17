@@ -5,6 +5,7 @@ interface Number {
     InRangeEq(v1: number, v2: number): boolean
     IsEven(): boolean
     IsOdd(): boolean
+    SumOfLess(): number
     Log(): number
 }
 Number.prototype.IsInteger = function() {
@@ -21,6 +22,9 @@ Number.prototype.IsEven = function() {
 }
 Number.prototype.IsOdd = function() {
     return this.valueOf() % 2 === 1
+}
+Number.prototype.SumOfLess = function() {
+    return this.valueOf() * (this.valueOf() + 1) * 0.5
 }
 Number.prototype.Log = function() {
     console.log(this)
