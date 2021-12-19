@@ -1,3 +1,4 @@
+import { ExecOptions } from 'child_process';
 import { parse } from 'path/posix';
 import { threadId } from 'worker_threads';
 import { Word, Execute } from './Emulator'
@@ -109,55 +110,182 @@ function Assemble(assembly: string[]) {
 // }
 // b += a
 
+enum ExpressionTypes {
+    Compound,
+    Declaration,
+    If,
+    Literal,
+    Operation,
+    Unknown,
+    While,
+}
+enum Operators {
+    Plus,
+    Minus,
+    Times,
+    Div,
+    Mod,
+    Increment,
+    Decrement,
+    IncrementBy,
+    DecrementBy,
+    SetEquals,
+    IsEqual,
+    IsNotEqual,
+    Not
+}
+
+abstract class Expression {
+    Type: ExpressionTypes = ExpressionTypes.Unknown
+}
+class CompoundExpression extends Expression {
+    override Type: ExpressionTypes.Compound = ExpressionTypes.Compound
+    Expressions: Expression[] = []
+}
+class DeclarationExpression extends Expression {
+    override Type: ExpressionTypes.Declaration = ExpressionTypes.Declaration
+    Identifiers: string[] = []
+    Initializers: {[key: string]: Expression} = {}
+}
+class IfExpression extends Expression {
+    override Type: ExpressionTypes.If = ExpressionTypes.If
+    Condition?: Expression
+    Body?: Expression
+    ElseExpression?: Expression
+}
+class LiteralExpression extends Expression {
+    override Type: ExpressionTypes.Literal = ExpressionTypes.Literal
+    Value?: number
+}
+class OperationExpression extends Expression {
+    override Type: ExpressionTypes.Operation = ExpressionTypes.Operation
+    Operand
+    Operator
+}
+class WhileExpression extends Expression {
+    override Type: ExpressionTypes.While = ExpressionTypes.While
+    Condition?: Expression
+    Body?: Expression
+}
+
+
 function Lexer(c: string) {
-    const code = c.replaceAll(/\s/g, '').Log(),
-        parseExpr = (code: string) => {
-            let out: string[] = [],
-                lastsemi = 0,
-                exprLevel = 0
-            code.forEach((char, i) => {
-                if (char === '{') exprLevel++
-                else if (char === '}') exprLevel--
-                else if (char === ';' && exprLevel === 0) {
-                    out.push(code.substring(lastsemi, i))
-                    lastsemi = i + 1
+    const keywords = [
+        'let',
+        'if',
+        'while'
+    ]
+
+    const code = c.replaceAll(/\s+/g, '').Log(),
+        identifiers: string[] = []
+
+    const parseExpr: ((code: string) => Expression) = (code: string) => {
+        const compound = new CompoundExpression
+        let lastsemi = 0,
+            exprLevel = 0
+        code.forEach((char, i) => {
+            if (char === '{') exprLevel++
+            else if (char === '}') exprLevel--
+            else if (char === ';' && exprLevel === 0) {
+                const expr = code.substring(lastsemi, i)
+
+                let word,
+                    rest
+                for (const [char, i] of expr.toArray().map((c, i) => [c, i] as [string, number])) {
+                    if (char.RegexTest(/\W/g)) {
+                        word = expr.slice(0, i)
+                        rest = expr.slice(i)
+                        break
+                    }
                 }
-            })
-            return out.Log()
-        }
-    const parsed = parseExpr(code)
+                if (!word || !rest) {
+                    word = expr
+                    rest = ''
+                }
 
-    parsed.map(expr => {
-        let word;
-        for (const [char, i] of expr.toArray().map((c, i) => [c, i] as [string, number])) {
-            if (char.RegexTest(/\W/g)) {
-                word = expr.slice(0, i).Log()
-                return
+                if (keywords.includes(word)) {
+                    if (word === 'let') {
+                        console.log('let', word, rest)
+
+                        const exp = new DeclarationExpression
+                        expr.slice(4).split(',').map(p => p.split('=')).forEach(decl => {
+                            const id = decl[0]
+                            if (decl.length === 1) {
+                                identifiers.push(id)
+                                exp.Identifiers.push(id)
+                            }
+                            else if (decl.length === 2) {
+                                identifiers.push(id)
+                                exp.Identifiers.push(id)
+                                exp.Initializers[id] = parseExpr(decl[1])
+                            }
+                        })
+                        compound.Expressions.push(exp)
+                    }
+                    else if (word === 'if') {
+                        const exp = new IfExpression
+                        //find parens for condition
+                        let parenDepth = 0
+                        for (const [char, i] of rest.toArray().WithIndices()) {
+                            if (char === '(') parenDepth++
+                            else if (char === ')' && parenDepth > 0) parenDepth--
+                            else if (char !== ')') continue
+                            exp.Condition = parseExpr(rest.substring(1, i))
+                            const elsePos = rest.indexOf('else', i)
+                            if (elsePos !== -1) {
+                                exp.Body = parseExpr(rest.substring(i, elsePos))
+                                exp.ElseExpression = parseExpr(rest.substring(elsePos + 4))
+                            }
+                            else {
+                                exp.Body = parseExpr(rest.substring(i))
+                            }
+                            break
+                        }
+                        if (!exp.Condition) throw new Error('Could not find while condition ' + rest)
+                        if (!exp.Body) throw new Error('Could not find while body ' + rest)
+                        return exp
+                    }
+                    else if (word === 'while') {
+                        const exp = new WhileExpression
+                        //find parens for condition
+                        //find expression
+                        let parenDepth = 0
+                        for (const [char, i] of rest.toArray().WithIndices()) {
+                            if (char === '(') parenDepth++
+                            else if (char === ')' && parenDepth > 0) parenDepth--
+                            else if (char !== ')') continue
+                            exp.Condition = parseExpr(rest.substring(1, i))
+                            exp.Body = parseExpr(rest.substring(i))
+                            break
+                        }
+                        if (!exp.Condition) throw new Error('Could not find while condition ' + rest)
+                        if (!exp.Body) throw new Error('Could not find while body ' + rest)
+                        return exp
+                    }
+                }
+                else if (identifiers.includes(word)) {
+
+                }
+                else if (word.RegexTest(/\d+/g)) {
+                    const exp = new LiteralExpression
+                    exp.Value = word.toInt()
+                    return exp
+                }
+                else throw new Error(`Unknown identifier ${word}`)
+
+
+                lastsemi = i + 1
             }
-        }
+        })
+        return compound
+    }
 
-
-        if (expr.startsWith('let:')) {
-            //declaration
-        }
-        else if (expr.startsWith('if')) {
-            //if
-        }
-        else if (expr.startsWith('while')) {
-            //while
-        }
-        else if (identifiers.includes())
-    })
-
-
-
-    
-
+    return parseExpr(code).Log()
 }
 
 Lexer(`
-let: a = 4;
-let: b = 1;
+let: a = 4,
+    b = 1;
 if(a > b){
     a++;
 } else{
@@ -169,7 +297,3 @@ while (b > 0) {
     b--;
 };
 `)
-
-/*
-
-*/

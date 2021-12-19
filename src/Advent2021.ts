@@ -1,3 +1,4 @@
+import { type } from 'os'
 import { LinkedList, LinkedNode } from './lib/LinkedList'
 import { Stack } from './lib/Stack'
 import { Array2D as Array2D, XY } from './lib/XY'
@@ -718,10 +719,163 @@ class Advent2021 {
         //x must be in rangeEQ(x, tuple[1].X)
         //y must be in rangeEQ(tuple[0].Y, y)
 
+
         new XY(target[1].X, xy.Y).CountCombinations(xy => IsValid(xy), new XY(xy.X, target[0].Y)).Log()
+    }
+    static Day18() {
+        type SnailTuple = [Snail | number, Snail | number]
+        class Snail {
+            Tuple: SnailTuple
+
+            constructor(tupleNumber: SnailTuple | string) {
+                if (typeof tupleNumber === 'string') {
+                    let snailNumber = tupleNumber
+                    let parseDepth = 0,
+                        delimiterPos
+                        snailNumber = snailNumber.slice(1, -1)
+                    for (const [char, i] of snailNumber.toArray().WithIndices()) {
+                        if (char === '[') parseDepth++
+                        else if (char === ']') parseDepth--
+                        else if (char === ',' && parseDepth === 0) {
+                            delimiterPos = i
+                            break
+                        }
+                    }
+                    if (!delimiterPos) throw new Error('Could not find delimiter in '+snailNumber)
+
+                    const tuple = [snailNumber.substring(0, delimiterPos),
+                        snailNumber.substring(delimiterPos + 1)]
+
+                    this.Tuple = tuple.map(t => !isNaN(t.toInt()) ? t.toInt() : new Snail(t)) as SnailTuple
+                }
+                else {
+                    this.Tuple = tupleNumber
+                }
+            }
+
+            Copy(): Snail {
+                return new Snail([typeof this.Tuple[0] === 'number' ? this.Tuple[0] : this.Tuple[0].Copy(),
+                    typeof this.Tuple[1] === 'number' ? this.Tuple[1] : this.Tuple[1].Copy()])
+            }
+
+            Add(snail: Snail) {
+                const s = new Snail([this, snail]).Copy()
+                s.Reduce()
+                return s
+            }
+
+            AddFirst(n: number) {
+                if (typeof this.Tuple[0] === 'number') this.Tuple[0] += n
+                else this.Tuple[0].AddFirst(n)
+            }
+            AddLast(n: number) {
+                if (typeof this.Tuple[1] === 'number') this.Tuple[1] += n
+                else this.Tuple[1].AddLast(n)
+            }
+
+            Magnitude(): number {
+                return 3 * (typeof this.Tuple[0] === 'number' ? this.Tuple[0] : this.Tuple[0].Magnitude())
+                + 2 * (typeof this.Tuple[1] === 'number' ? this.Tuple[1] : this.Tuple[1].Magnitude())
+            }
+
+            TryExplode(depth = 0): [number, number, boolean] /** exploded */ {
+                if (depth >= 3) {
+
+                    if (typeof this.Tuple[0] !== 'number') {
+                        const addNumbers = this.Tuple[0].Tuple as [number, number]
+                        if (typeof this.Tuple[1] === 'number') this.Tuple[1] += addNumbers[1]
+                        else this.Tuple[1].AddFirst(addNumbers[1])
+                        this.Tuple[0] = 0
+                        return [addNumbers[0], 0, true]
+                    }
+
+                    if (typeof this.Tuple[1] !== 'number') {
+                        const addNumbers = this.Tuple[1].Tuple as [number, number]
+                        this.Tuple[0] += addNumbers[0]
+                        this.Tuple[1] = 0
+                        return [0, addNumbers[1], true]
+                    }
+                }
+
+                if (typeof this.Tuple[0] !== 'number') {
+                    const addNumbers = this.Tuple[0].TryExplode(depth + 1)
+                    if (addNumbers[0] > 0) return addNumbers
+                    if (addNumbers[1] > 0) {
+                        if (typeof this.Tuple[1] === 'number') this.Tuple[1] += addNumbers[1]
+                        else this.Tuple[1].AddFirst(addNumbers[1])
+                        return [0, 0, true]
+                    }
+                    if (addNumbers[2]) return [0, 0, true]
+                }
+                
+                if (typeof this.Tuple[1] !== 'number') {
+                    const addNumbers = this.Tuple[1].TryExplode(depth + 1)
+                    if (addNumbers[0] > 0) {
+                        if (typeof this.Tuple[0] === 'number') this.Tuple[0] += addNumbers[0]
+                        else this.Tuple[0].AddLast(addNumbers[0])
+                        return [0, 0, true]
+                    }
+                    if (addNumbers[1] > 0) return addNumbers
+                    if (addNumbers[2]) return [0, 0, true]
+                }
+
+                return [0, 0, false]
+
+            }
+
+            TrySplit(): boolean {
+                if (typeof this.Tuple[0] === 'number' && this.Tuple[0] >= 10) {
+                    this.Tuple[0] = new Snail([Math.floor(this.Tuple[0]/2), Math.ceil(this.Tuple[0]/2)])
+                    return true
+                }
+                else if (typeof this.Tuple[0] !== 'number' && this.Tuple[0].TrySplit()) {
+                    return true
+                }
+
+                if (typeof this.Tuple[1] === 'number' && this.Tuple[1] >= 10) {
+                    this.Tuple[1] = new Snail([Math.floor(this.Tuple[1]/2), Math.ceil(this.Tuple[1]/2)])
+                    return true
+                }
+                else if (typeof this.Tuple[1] !== 'number' && this.Tuple[1].TrySplit()) {
+                    return true
+                }
+
+                return false
+            }
+
+            Reduce() {
+                while (true) {
+                    if (this.TryExplode()[2]) continue
+                    else if (this.TrySplit()) continue
+                    break
+                }
+            }
+
+            toString(): string {
+                return `[${this.Tuple.map(t => typeof t === 'number' ? t : t.toString()).join(',')}]`
+            }
+            Log(): Snail {
+                console.log(`🐌 ${this.toString()}`)
+                return this
+            }
+        }
+
+        const snails = Data.map(l => new Snail(l))
+
+        // snails.reduce((a, b) => a.Add(b).Log()).Log().Magnitude().Log()
+
+        let max = 0
+        snails.forEach((s, i) => {
+            snails.forEach((ss, ii) => {
+                if (i !== ii) {
+                    max = [s.Add(ss).Magnitude(), max].Max()
+                }
+            })
+        })
+        max.Log()
     }
 }
 const startTime = process.hrtime()
-Advent2021.Day17()
+Advent2021.Day18()
 const time = process.hrtime(startTime)
 console.log(`Ran in ${time[0]}s ${time[1]/1_000_000}ms`)

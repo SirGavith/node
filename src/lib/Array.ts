@@ -19,6 +19,7 @@ interface Array<T> {
     Frequencies(): [T, number][]
     MaxFrequency(): number
     RemoveUndefined(): NonNullable<T>[]
+    WithIndices(): [T, number][]
     Median(): T
     Max(): T
     Min(): T
@@ -166,6 +167,9 @@ Array.prototype.RemoveUndefined = function<T>() {
         if (v != undefined && v != null) arr.push(v as NonNullable<T>)
     }
     return arr
+}
+Array.prototype.WithIndices = function<T>() {
+    return (this as T[]).map((v, i) => [v, i] as [T, number])
 }
 Array.prototype.Median = function() {
     const arr = this.sort((a, b) => a - b),
