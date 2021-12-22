@@ -1,6 +1,7 @@
 interface Array<T> {
     /** returns a shallow copy of an array */
     Copy(): T[]
+    ReduceSum(lambda: (val: T, index: number) => number): number
     forEachPair(action: (value: T[], index: number[]) => void, allowDuplicates?: boolean, allowDoubles?: boolean): void
     forEachGroup(groupSize: number, action: (value: T[], index: number[]) => void, allowDuplicates?: boolean, allowDoubles?: boolean): void
     Uniques(): T[]
@@ -11,7 +12,7 @@ interface Array<T> {
      in each iteration, it filters the list by the filter */
     ReduceFilter(filter: (value: T, index: number, array: T[]) => boolean): T
     FillEmpty(value: T, pad?: number): Array<T>
-    Count(predicate: (value: T, index: number, array: T[]) => boolean): number
+    Count(predicate?: (value: T, index: number, array: T[]) => boolean): number
     IncrementOrCreate (index: number, value?: number): void
     BinarySearch(search: (value: T, index: number) => boolean): T
     Permutations(): T[][]
@@ -20,6 +21,7 @@ interface Array<T> {
     MaxFrequency(): number
     RemoveUndefined(): NonNullable<T>[]
     WithIndices(): [T, number][]
+    Indices(): number[]
     Median(): T
     Max(): T
     Min(): T
@@ -71,6 +73,9 @@ function forEachRecursive(array: any[], times: number, action: (values: any[], i
         });
     }
 }
+Array.prototype.ReduceSum = function<T>(lambda: (val: T, index: number) => number) {
+    return this.reduce((a, val, i) => a + lambda(val, i), 0)
+}
 Array.prototype.MostCommon = function() {
     return this.sort((a,b) =>
           this.filter(v => v === a).length
@@ -111,8 +116,8 @@ Array.prototype.FillEmpty = function<T>(fillValue: T, pad?: number) {
     }
     return arr
 }
-Array.prototype.Count = function(predicate: (value: any, index: number, array: any[]) => boolean) {
-    return this.filter(predicate).length
+Array.prototype.Count = function(predicate?: (value: any, index: number, array: any[]) => boolean) {
+    return this.filter(predicate ?? (b => b)).length
 }
 Array.prototype.IncrementOrCreate = function(index: number, value = 1) {
     if (this[index]) this[index] += value
@@ -170,6 +175,9 @@ Array.prototype.RemoveUndefined = function<T>() {
 }
 Array.prototype.WithIndices = function<T>() {
     return (this as T[]).map((v, i) => [v, i] as [T, number])
+}
+Array.prototype.Indices = function() {
+    return this.map((v, i) => i)
 }
 Array.prototype.Median = function() {
     const arr = this.sort((a, b) => a - b),

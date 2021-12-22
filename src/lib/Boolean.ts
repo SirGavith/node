@@ -1,7 +1,7 @@
 interface Boolean {
     IsTrue(action: () => void): void
     IsFalse(action: () => void): void
-    Log(): Boolean
+    Log(): boolean
 }
 Boolean.prototype.IsTrue = function(action: () => void) {
     if (this) action()
@@ -11,5 +11,5 @@ Boolean.prototype.IsFalse = function(action: () => void) {
 }
 Boolean.prototype.Log = function() {
     console.log(this)
-    return this
+    return this.valueOf()
 }

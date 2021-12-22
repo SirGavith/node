@@ -60,6 +60,7 @@ export class XY {
     Floor() { return new XY(Math.floor(this.X), Math.floor(this.Y)) }
     Ceil() { return new XY(Math.ceil(this.X), Math.ceil(this.Y)) }
     Abs() { return new XY(Math.abs(this.X), Math.abs(this.Y)) }
+    Reverse() { return new XY(this.Y, this.X)}
     Negate() { return new XY().minus(this) }
     DeZero() { return new XY(this.X === 0 ? 1 : this.X, this.Y === 0 ? 1 : this.Y) }
 
@@ -110,6 +111,26 @@ export class XY {
         ]
     }
 
+    Neighbourhood(includeDiags = false) {
+        return includeDiags ? [
+            this.plus(-1, -1),
+            this.plus( 0, -1),
+            this.plus( 1, -1),
+            this.plus(-1,  0),
+            this.Copy(),
+            this.plus( 1, 0),
+            this.plus(-1, 1),
+            this.plus( 0, 1),
+            this.plus( 1, 1),  
+        ] : [
+            this.minus(1, 0),
+            this.plus(1, 0),
+            this.Copy(),
+            this.plus(0, 1),
+            this.minus(0, 1)
+        ]
+    }
+
     static toString(a: XY[]): string {
         return a.map(xy => `(${xy.toString()})`).join(', ')
     }
@@ -120,6 +141,11 @@ export class XY {
 
     static fromTuple(t: [number, number]) {
         return new XY(t[0], t[1])
+    }
+
+    Log() {
+        console.log(this)
+        return this
     }
 }
 
@@ -177,12 +203,12 @@ export class Array2D<T> {
     }
 
     Log() {
-        // this.Array.map(r => r.map(t => t ? '█' : ' ').join('')+ '     ').Log()
         // console.log(this)
 
         console.log('[')
         this.Array.forEach(row => {
-            console.log('| '+row.map(v => (v === undefined ? '' : typeof v === "number" && v === Infinity ? '∞' : String(v)).padStart(3)).join())
+            // console.log('| '+row.map(v => (v === undefined ? '' : typeof v === "number" && v === Infinity ? '∞' : String(v)).padStart(3)).join())
+            console.log('| '+row.map(v => v ? '#' : '.').join(''))
         })
         console.log(']')
 

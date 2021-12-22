@@ -1,7 +1,7 @@
-import { type } from 'os'
 import { LinkedList, LinkedNode } from './lib/LinkedList'
 import { Stack } from './lib/Stack'
 import { Array2D as Array2D, XY } from './lib/XY'
+import { XYZ } from './lib/XYZ'
 import { Sorts, Files, Range } from './main'
 
 const UseExample = false,
@@ -874,8 +874,328 @@ class Advent2021 {
         })
         max.Log()
     }
+    static Day19() {
+        class Scanner {
+            Orientations: Beacons[] = []
+            AbsoluteOrientation?: number
+            Neighbours: [Scanner, XYZ][] = []
+            constructor(b: XYZ[], public Index: number) {
+                const ors = b.map(xyz => xyz.Orientations())
+                for (let i = 0; i < 24; i++) {
+                    this.Orientations.push(new Beacons(ors.map(o => o[i])))
+                }
+            }
+            toString() {
+                return this.Orientations.map(b => b.toString()).map(s => '  '+s).join('\n')
+            }
+            Log() {
+                console.log('{')
+                this.Orientations.forEach(b => b.toString().Log())
+                console.log('}')
+                return this
+            }
+
+            Overlap(s: Scanner): [XYZ, number] | null {
+                let i = 0
+                for (const o of s.Orientations) {
+                    //assert match
+                    const overlap = this.Orientations[this.AbsoluteOrientation!].Overlap(o)
+                    if (overlap !== null) {
+                        return [overlap, i]
+                    }
+                    i++
+                }
+                //no overlap
+                return null
+            }
+
+            MergePoints(translation = new XYZ) {
+                let list: XYZ[] = this.Orientations[this.AbsoluteOrientation!].Beacons.map(p => p.plus(translation))
+                for (const n of this.Neighbours) {
+                    list = list.concat(n[0].MergePoints(n[1].plus(translation)))
+                }
+                return list
+            }
+
+            Translations(translation = new XYZ) {
+                let list: XYZ[] = [translation]
+                for (const n of this.Neighbours) {
+                    list = list.concat(n[0].Translations(n[1].plus(translation)))
+                }
+                return list
+            }
+        }
+        class Beacons {
+            Beacons: XYZ[]
+            constructor(b : XYZ[]) {
+                this.Beacons = b
+            }
+            toString() {
+                return '  🥓'+this.Beacons.map(xyz => xyz.toString()).join(' | ')
+            }
+
+            Overlap(otherBeacons: Beacons) {
+                // assert xyz pair
+                // see if b translated by the offset produces 12 matching xyzs
+                for (const b of this.Beacons) {
+            
+                    for (const bb of otherBeacons.Beacons) {
+                        let matches = 0
+                        //assert b === bb
+                        const translation = b.minus(bb)
+                        //number of elements in translateed that are equal to those in this
+                        
+                        for (const bbb of this.Beacons) {
+                            const bbbtranslated = bbb.minus(translation)
+                            for (const bbbb of otherBeacons.Beacons) {
+                                if (bbbb.EQ(bbbtranslated)) {
+                                    matches++
+                                    if (matches >= overlap) return translation
+                                }
+                            }
+                        }
+                    }
+
+                }
+                return null
+            }
+
+            Log() {
+                this.toString().Log()
+                return this
+            }
+        }
+
+
+        const scanners = DataFull.split('\n\n').map((scannerData, i) =>
+            new Scanner(scannerData.SplitLines().slice(1).map(l =>
+                XYZ.fromTuple(l.split(',').toIntArray() as [number, number, number])), i))
+        const overlap = 12
+        
+
+        // d[0].Orientations[0].Log().Overlap(d[1].Orientations[0].Log()).Log()
+        const head = scanners[0]
+        head.AbsoluteOrientation = 0
+
+        const findNeighbors = (s: Scanner, possibleNeighbors: Scanner[]) => {
+            console.log('finding neighbors', s.Index)
+            for (const ss of possibleNeighbors) {
+                console.log(' finding overlap with', ss.Index)
+                const overlap = s.Overlap(ss)
+                if (overlap !== null) {
+                    ss.AbsoluteOrientation = overlap[1]
+                    s.Neighbours.push([ss, overlap[0]])
+                }
+            }
+            for (const ss of s.Neighbours) {
+                possibleNeighbors.splice(possibleNeighbors.indexOf(ss[0]), 1)
+            }
+
+            console.log('found', possibleNeighbors.length, 'options')
+            // possibleNeighbors = possibleNeighbors.filter(n => !s.Neighbours.map(nn => nn[0]).includes(n))
+
+            s.Neighbours.forEach(n => {
+                findNeighbors(n[0], possibleNeighbors)
+            })
+        }
+
+        findNeighbors(head, scanners.slice(1))
+
+        // const l = toTranslations(head)
+
+        const s = new Set<string>()
+
+        const merged = head.MergePoints()
+        
+        merged.forEach(xyz => s.add(xyz.toString()))
+
+        const trans = head.Translations().Log()
+        let max = 0
+        trans.forEach(t => {
+            trans.forEach(tt => {
+                const manhattan = t.ManhattanDist(tt)
+                if (manhattan > max) max = manhattan
+            })
+        })
+
+        // Array.from(s).sort((a, b) => a.slice(1).split(',')[0].toInt() - b.slice(1).split(',')[0].toInt()).Log()
+
+        s.Log()
+
+        s.size.Log()
+
+        max.Log()
+        
+
+    }
+    static Day20() {
+        const algorithm = Data[0].toArray().map(char => char === '#')
+        let image = Array2D.fromArray<boolean>(Data.slice(2).map(l => l.toArray().map(char => char === '#')))
+        image = new Array2D<boolean>(image.Size.plus(2)).map((_, xy) => image.get(xy.minus(1)))
+
+        for (let i = 0; i < 8; i++) {
+            image = new Array2D<boolean>(image.Size.plus(2)).map((_, xy) => 
+                algorithm[xy.minus(1).Neighbourhood(true).map(xy => image.get(xy) ? '1' : '0').join('').toInt(2)])
+            
+            if (i % 2 === 1) {
+                image.Array = [
+                    Array(image.Size.X).fill(false),
+                    Array(image.Size.X).fill(false),
+                    ...image.Array.slice(2, -2).map(l => l.slice(0, -2).concat([false, false])),
+                    Array(image.Size.X).fill(false),
+                    Array(image.Size.X).fill(false),
+                ]
+            }
+        }
+
+
+        
+
+        image.Flatten().Count().Log()
+        // image.Array.ReduceSum(r => r.Count()).Log()
+    }
+    static Day21() {
+
+        const die = {
+            Val: 1,
+            Rolls: 0,
+            Next: function() {
+                const out = this.Val
+                this.Val %= 100
+                this.Val++
+                this.Rolls++
+                return out
+            }
+        }
+        class Player {
+            Name: number
+            Position: number
+            Score: number
+
+            constructor(name: number, position: number) {
+                this.Name = name
+                this.Position = position
+                this.Score = 0
+            }
+
+            Turn() {
+
+                const rolls = [die.Next(), die.Next(), die.Next()]
+
+                this.Position += rolls.Sum()
+                this.Position %= 10
+                if (this.Position === 0) this.Position = 10
+                this.Score += this.Position
+
+                console.log(`p${this.Name}: ${rolls.join('+')} (${die.Rolls}) => ${this.Position} | ${this.Score}`)
+
+                return this.Score >= 21
+            }
+        }
+
+        const players = [
+            new Player(1, 2),
+            new Player(2, 1)
+        ]
+
+        game: while (true) {
+            for (const player of players) {
+                if (player.Turn()) break game
+            }
+        }
+        players.Log()
+        die.Rolls.Log()
+
+        console.log(die.Rolls * players.map(p => p.Score).Min())
+
+    }
+    static Day21_2() {
+        const r = Range(3, 9).map(v => [v, 0]).toObject() as {[roll: number]: number}
+        for (let r1 = 1; r1 <= 3; r1++) {
+            for (let r2 = 1; r2 <= 3; r2++) {
+                for (let r3 = 1; r3 <= 3; r3++) {
+                    r[r1+r2+r3]++
+                }
+            }
+        }
+        const rolls = r.Entries().map(e => [e[0].toInt(), BigInt(e[1])] as [number, bigint])
+        rolls.Log()
+
+        const wins = [0n, 0n]
+
+        class Game {
+            constructor(public Position1: number,
+                        public Score1: number,
+                        public Position2: number,
+                        public Score2: number) { }
+
+            Move(player: 1 | 2, length: number) {
+                if (player === 1) {
+                    this.Position1 += length
+                    this.Position1 %= 10
+                    if (this.Position1 === 0) this.Position1 = 10
+                    this.Score1 += this.Position1
+                    if (this.Score1 >= 21) return true
+
+                } else {
+                    this.Position2 += length
+                    this.Position2 %= 10
+                    if (this.Position2 === 0) this.Position2 = 10
+                    this.Score2 += this.Position2
+                    if (this.Score2 >= 21) return true
+                }
+                return false
+            }
+
+            Copy() {
+                return new Game(this.Position1, this.Score1, this.Position2, this.Score2)
+            }
+
+            toString() {
+                return `${this.Position1},${this.Score1},${this.Position2},${this.Score2}`
+            }
+
+            static fromString(s: string) {
+                const ss = s.split(','),
+                    sss = ss.toIntArray()
+
+                return new Game(sss[0], sss[1], sss[2], sss[3])
+            }
+        }
+
+        let list: {[game: string]: bigint} = {}
+
+        list[new Game(2, 0, 1, 0).toString()] = 1n
+
+        while (list.Entries().length > 0) {
+            const newList: typeof list = {}
+            list.forEach((g, freq: bigint) => {
+                const game = Game.fromString(g)
+
+                for (const [roll1, rollf1] of rolls) {
+                    const g = game.Copy()
+                    if (g.Move(1, roll1)) wins[0] += freq * rollf1
+                    else {
+                        for (const [roll2, rollf2] of rolls) {
+                            const gg = g.Copy(),
+                                f = freq * rollf1 * rollf2
+
+                            if (gg.Move(2, roll2)) wins[1] += f
+                            else newList.IncrementOrCreate(gg.toString(), f)
+                        }
+                    }
+
+                    
+                }
+            })
+
+            list = newList.Log()
+        }
+
+        wins.Log()
+    }
 }
 const startTime = process.hrtime()
-Advent2021.Day18()
+Advent2021.Day21_2()
 const time = process.hrtime(startTime)
 console.log(`Ran in ${time[0]}s ${time[1]/1_000_000}ms`)
