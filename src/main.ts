@@ -70,6 +70,8 @@ export abstract class Sorts {
 
 require('./lib/Array')
 require('./lib/Bigint')
+require('./lib/BigMap')
+require('./lib/BigSet')
 require('./lib/Boolean')
 require('./lib/Generator')
 require('./lib/Number')

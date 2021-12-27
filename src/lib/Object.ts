@@ -30,8 +30,8 @@ Object.prototype.RemoveUndefinedVals = function() {
 Object.prototype.IncrementOrCreate = function(key: string, value: number | bigint = 1) {
     const t = typeof value === 'number' ? (this as FreqDict) : this as BigFreqDict
 
-    if (t[key]) t[key] += value
-    else (t[key] = value
+    if (t[key]) (t[key] as number) += value as number //these assertions are lies
+    else t[key] = value
 }
 Object.prototype.filter = function(filter: (key: string, val: any) => boolean) {
     const out: {[key: string]: any} = {}

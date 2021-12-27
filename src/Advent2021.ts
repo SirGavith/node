@@ -1,7 +1,8 @@
+import { BigMap } from './lib/BigMap'
 import { LinkedList, LinkedNode } from './lib/LinkedList'
 import { Stack } from './lib/Stack'
 import { Array2D as Array2D, XY } from './lib/XY'
-import { XYZ } from './lib/XYZ'
+import { Array3D, XYZ } from './lib/XYZ'
 import { Sorts, Files, Range } from './main'
 
 const UseExample = false,
@@ -1194,8 +1195,497 @@ class Advent2021 {
 
         wins.Log()
     }
+    static Day22() {
+        const onCubes = new Set<string>()
+
+        for (const l of Data) {
+            l.Log()
+            const [instr, p] = l.split(' ')
+            let pos = p.split(',').map(c => c.slice(2).split('..').toIntArray())
+            const min = XYZ.fromTuple(pos.map(a => a[0] < -50 ? -50 : a[0]) as [number, number, number]),
+                max = XYZ.fromTuple(pos.map(a => a[1] > 50 ? 50 : a[1]) as [number, number, number])
+            
+            if (min.toArray().some((v, i) => v > max.toArray()[i])) continue
+
+            max.foreachCombination(xyz => {
+                if (xyz.IsGreaterEQAll(new XYZ(-50)) && xyz.IsLessEQAll(new XYZ(50))) {
+                    if (instr === 'on') {
+                        onCubes.add(xyz.toString())
+                    } else {
+                        onCubes.delete(xyz.toString())
+                    }
+                }
+            }, min)
+
+        }
+
+        onCubes.size.Log()
+    }
+    static Day22_2() {
+        class Cuboid {
+            constructor(public MinX: number,
+                        public MaxX: number,
+                        public MinY: number,
+                        public MaxY: number,
+                        public MinZ: number,
+                        public MaxZ: number,
+                        public Vol0?: boolean) {}
+
+            Intersect(c: Cuboid) {
+                let cc = new Cuboid(
+                    [this.MinX, c.MinX].Max(),
+                    [this.MaxX, c.MaxX].Min(),
+                    
+                    [this.MinY, c.MinY].Max(),
+                    [this.MaxY, c.MaxY].Min(),
+
+                    [this.MinZ, c.MinZ].Max(),
+                    [this.MaxZ, c.MaxZ].Min(),
+                )
+                if (cc.MaxX < cc.MinX || cc.MaxY < cc.MinY || cc.MaxZ < cc.MinZ) return new Cuboid(0, 0, 0, 0, 0, 0, true)
+                return cc
+            }
+
+            Volume(): number {
+                if (this.Vol0) return 0
+                return (this.MaxX - this.MinX + 1) *
+                       (this.MaxY - this.MinY + 1) *
+                       (this.MaxZ - this.MinZ + 1)
+            }
+        }
+        class Instruction {
+            Cuboid: Cuboid
+            On: boolean
+
+            constructor(instr: string) {
+                const [type, range] = instr.split(' ')
+                this.On = type === 'on'
+                const pos = range.split(',').flatMap(c => c.slice(2).split('..').toIntArray()) as [number, number, number, number, number, number,]
+
+                this.Cuboid = new Cuboid(...pos)
+            }
+        }
+
+        function HowManyOn(insts: Instruction[], cuboid: Cuboid): number {
+            const instr = insts.at(-1)!
+            if (insts.length === 1) {
+                if (!instr.On) return 0
+                else return instr.Cuboid.Intersect(cuboid).Volume()
+            }
+            const allOn = HowManyOn(insts.slice(0, -1), cuboid),
+                intersection = cuboid.Intersect(instr.Cuboid)
+            if (intersection.Volume() === 0) return allOn
+            const on = HowManyOn(insts.slice(0, -1), intersection)
+
+            return allOn - on + (instr.On ? intersection.Volume() : 0)
+        }
+        //define reactor cuboid as instruction min/maxes
+
+        const is = Data.map(l => new Instruction(l))
+
+        const reactorCuboid = is.map(i => i.Cuboid).reduce((c, cc) => {
+            return new Cuboid(
+                [c.MinX, cc.MinX].Min(),
+                [c.MaxX, cc.MaxX].Max(),
+                                    
+                [c.MinY, cc.MinY].Min(),
+                [c.MaxY, cc.MaxY].Max(),
+
+                [c.MinZ, cc.MinZ].Min(),
+                [c.MaxZ, cc.MaxZ].Max())
+        })
+
+        reactorCuboid.Log()
+
+        // for (let i = 1; i <= is.length; i++) {
+            console.log(420, HowManyOn(is, reactorCuboid))
+        // }
+
+        //allOn == 494804
+        //on == 2256
+        //intvol == 2992
+
+
+    }
+    static Day23() {
+        class Tile {
+            constructor(public Home?: string, public Occupant?: string, public AtDest = false) {}
+
+            get Weight() {
+                switch (this.Occupant) {
+                    case 'A': return 1
+                    case 'B': return 10
+                    case 'C': return 100
+                    case 'D': return 1000
+                }
+                throw new Error('unknown occupant ')
+            }
+
+            Copy() { return new Tile(this.Home, this.Occupant, this.AtDest)}
+        }
+        class Board {
+            Tiles: Tile[]
+            NextMoves: Board[] = []
+            Parent?: Board
+            constructor(tiles: Tile[], public Weight: number, parent?: Board) {
+                this.Tiles = tiles
+                this.Parent = parent
+            }
+
+            FindNextMoves(): void {
+                for (let from = 0; from < this.Tiles.length; from++) {
+                    if (this.Tiles[from].Occupant) {
+                        for (let to = 0; to < this.Tiles.length; to++) {
+                            if (from === to) continue
+
+                            if (!this.IsValidMove(from, to)) continue
+                            const path = this.FindPath(from, to)
+                            if (this.IsObstructed(path)) continue
+
+                            const b = new Board(this.Tiles.map(t => t.Copy()),
+                                this.Weight + path.length * this.Tiles[from].Weight,
+                                this)
+                            b.Tiles[to].Occupant = b.Tiles[from].Occupant
+                            b.Tiles[from].Occupant = undefined
+                            if (this.rooms[to]) {
+                                b.Tiles[to].AtDest = true
+                                this.NextMoves = []
+                            }
+                            this.NextMoves.push(b)
+                        }
+                    }
+                }
+            }
+
+            private connections: {[node: number]: number[]} = {
+                0: [1],
+                1: [0, 2],
+                2: [1, 3, 11],
+                3: [2, 4],
+                4: [3, 5, 15],
+                5: [4, 6],
+                6: [5, 7, 19],
+                7: [6, 8],
+                8: [7, 9, 23],
+                9:  [8, 10],
+                10: [9],
+
+                11: [2, 12],
+                12: [11, 13],
+                13: [12, 14],
+                14: [13],
+
+                15: [4, 16],
+                16: [15, 17],
+                17: [16, 18],
+                18: [17],
+
+                19: [6, 20],
+                20: [19, 21],
+                21: [20, 22],
+                22: [21],
+
+                23: [8, 24],
+                24: [23, 25],
+                25: [24, 26],
+                26: [25],
+            }
+            private rooms: {[node: number]: number[]} = {
+                    11: [11, 12, 13, 14],
+                    12: [11, 12, 13, 14],
+                    13: [11, 12, 13, 14],
+                    14: [11, 12, 13, 14],
+
+                    15: [15, 16, 17, 18],
+                    16: [15, 16, 17, 18],
+                    17: [15, 16, 17, 18],
+                    18: [15, 16, 17, 18],
+
+                    19: [19, 20, 21, 22],
+                    20: [19, 20, 21, 22],
+                    21: [19, 20, 21, 22],
+                    22: [19, 20, 21, 22],
+
+                    23: [23, 24, 25, 26],
+                    24: [23, 24, 25, 26],
+                    25: [23, 24, 25, 26],
+                    26: [23, 24, 25, 26],
+            }
+
+            FindPath(from: number, to: number): number[] {
+                const connections = this.connections
+                function findPath(path: number[]): number[] | null {
+                    if (path.at(-1)! === to) return path
+                    for (const adjacent of connections[path.at(-1)!]) {
+                        if (!path.includes(adjacent)) {
+                            const p = findPath(path.concat(adjacent))
+                            if (p !== null) return p
+                        }
+                    }
+                    return null
+                }
+                const p = findPath([from])?.slice(1)
+
+                if (!p) throw new Error(`could not find path (${from} => ${to})`)
+
+                return p
+            }
+
+            IsValidMove(from: number, to: number): boolean {
+                if (from === to) return false
+                if (from < 0 || from >= this.Tiles.length || to < 0 || to >= this.Tiles.length) throw new Error('Bad move') // invalid parameters
+                if (this.Tiles[to].Occupant) return false // destination occupied
+                if (this.Tiles[from].AtDest) return false
+                if (!this.Tiles[from].Occupant) return false // nobody to move
+                if ([2, 4, 6, 8].includes(to)) return false // rule 1
+
+                const room = this.rooms[to]
+                if (room) {
+                    //going into room
+                    if (this.Tiles[to].Home !== this.Tiles[from].Occupant ||
+                        room.map(t => this.Tiles[t]).some(t => t.Occupant && t.Occupant !== t.Home)) return false // rule 2
+                    else {
+                        //home room && right people
+
+                        //ensure deepest in room
+                        if (!this.Tiles[room[1]].Occupant && to === room[0]) return false
+                    }
+                }
+
+                if (from <= 10 && !room) return false // rule 3
+                return true
+            }
+
+            IsObstructed(path: number[]) {
+                return path.some(tile => this.Tiles[tile].Occupant)
+            }
+
+            Log() {
+                const t = (i: number) => this.Tiles[i].Occupant ?? '.'
+                console.log(`#############`)
+                console.log(`#${this.Tiles.filter((t, i) => i <= 10).map(t => t.Occupant ?? '.').join('')}#`)
+                console.log(`###${t(11)}#${t(15)}#${t(19)}#${t(23)}###`)
+                console.log(`  #${t(12)}#${t(16)}#${t(20)}#${t(24)}#  `)
+                console.log(`  #${t(13)}#${t(17)}#${t(21)}#${t(25)}#  `)
+                console.log(`  #${t(14)}#${t(18)}#${t(22)}#${t(26)}#  `)
+                console.log(`  #########  `)
+                console.log(``)
+            }
+
+            LogSteps() {
+                if (this.Parent) this.Parent.LogSteps()
+                this.Log()
+            }
+
+            Hash() {
+                return `${this.Tiles.map(t => t.Occupant ?? '.').join('')}:${this.Weight}`
+            }
+        }
+
+        // const headBoard = new Board(
+        //     [new Tile, new Tile, new Tile, new Tile, new Tile, new Tile, new Tile, new Tile, new Tile, new Tile, new Tile,
+        //         new Tile('A', 'B'), new Tile('A', 'D'), new Tile('A', 'D'), new Tile('A', 'A', true),
+        //         new Tile('B', 'C'), new Tile('B', 'C'), new Tile('B', 'B'), new Tile('B', 'D'),
+        //         new Tile('C', 'B'), new Tile('C', 'B'), new Tile('C', 'A'), new Tile('C', 'C', true),
+        //         new Tile('D', 'D'), new Tile('D', 'A'), new Tile('D', 'C'), new Tile('D', 'A'),
+        //     ], 0)
+
+        const headBoard = new Board(
+            [new Tile, new Tile, new Tile, new Tile, new Tile, new Tile, new Tile, new Tile, new Tile, new Tile, new Tile,
+                new Tile('A', 'C'), new Tile('A', 'D'), new Tile('A', 'D'), new Tile('A', 'B'),
+                new Tile('B', 'A'), new Tile('B', 'C'), new Tile('B', 'B'), new Tile('B', 'A'),
+                new Tile('C', 'B'), new Tile('C', 'B'), new Tile('C', 'A'), new Tile('C', 'D'),
+                new Tile('D', 'D'), new Tile('D', 'A'), new Tile('D', 'C'), new Tile('D', 'C'),
+            ], 0)
+
+        // const headBoard = new Board(
+        //     [new Tile(undefined, 'A'), new Tile(undefined, 'A'), new Tile, new Tile, new Tile, new Tile, new Tile, new Tile(undefined, 'B'), new Tile, new Tile(undefined, 'B'), new Tile(undefined, 'D'),
+        //         new Tile('A', 'B'), new Tile('A', 'D'), new Tile('A', 'D'), new Tile('A', 'A', true),
+        //         new Tile('B', 'C'), new Tile('B', 'C'), new Tile('B', 'B'), new Tile('B', 'D'),
+        //         new Tile('C'), new Tile('C'), new Tile('C'), new Tile('C', 'C', true),
+        //         new Tile('D'), new Tile('D'), new Tile('D', 'C'), new Tile('D', 'A'),
+        //     ], 0)
+
+        const searched = new Set<string>()
+
+        let leastWeight = Number.MAX_VALUE
+
+        const recurse = (b: Board) => {
+            // b.Log()
+            b.FindNextMoves()
+            for (const board of b.NextMoves) {
+                const hash = board.Hash()
+                if (searched.has(hash)) continue
+
+                searched.add(hash)
+                if (board.Tiles.every(tile => !tile.Occupant || tile.AtDest)) {
+                    //completion
+                    if (board.Weight < leastWeight) {
+                        board.LogSteps()
+                        leastWeight = board.Weight.Log()
+                    }
+                }
+                else {
+                    if (board.Weight < leastWeight)
+                        recurse(board)
+                }
+                
+            }
+        }
+        recurse(headBoard)
+        
+        leastWeight.Log()
+    }
+    static Day24() {
+        class Step {
+            constructor(
+                public A: number,
+                public B: number,
+                public C: number) {}
+        }
+
+        const steps = [
+            new Step(1, 10, 5),
+            new Step(1, 13, 9),
+            new Step(1, 12, 4),
+            new Step(26, -12, 4),
+            new Step(1, 11, 10),
+            new Step(26, -13, 14),
+            new Step(26, -9, 14),
+            new Step(26, -12, 12),
+            new Step(1, 14, 14),
+            new Step(26, -9, 14),
+            new Step(1, 15, 5),
+            new Step(1, 11, 10),
+            new Step(26, -16, 8),
+            new Step(26, -2, 15),
+        ]
+
+        function Emu1(w: number, A: number, B: number, C: number) {
+            let x = 0, y = 0, z = 0
+
+            x = z
+            x %= 26
+            z /= A
+            console.log(`z /= ${A}`)
+            x += B
+            x = x === w ? 1 : 0
+            x = x === 0 ? 1 : 0
+            y += 25
+            y *= x
+            y += 1
+            z *= y
+            console.log(`z *= ${y}`)
+            y = w
+            y += C
+            y *= x
+            z += y
+            console.log(`z += ${y}`)
+        }
+
+        function Emu2(input: number[]) {
+            const stack = new Stack<number>();
+            for (const [step, w] of steps.map((s, i) => [s, input[i]] as [Step, number])) {
+
+                let x = (step.A === 26 ? stack.Pop() : stack.Peek()) ?? 0
+
+                if (x + step.B != w)
+                    stack.Push(w + step.C)
+
+                stack.Log()
+            }
+            stack.Array.join('').Log()
+            return stack.Count === 0
+        }
+
+        function Emu3(input: number[]) {
+            console.log('Evaluating', input)
+            let reg: {[key: string]: number} = {
+                w: 0,
+                x: 0,
+                y: 0,
+                z: 0
+            }
+            let inputIndex = 0
+            console.log('             w  x  y  z')
+            for (const line of Data) {
+                const l = line.split(' ')
+                const [instruction, v1, v2] = l
+                let a = reg[v1]!
+                let b = reg[v2] ?? v2?.toInt()
+                switch (instruction) {
+                    case 'inp':
+                        console.log(reg.z)
+                        reg[v1] = input[inputIndex]
+                        inputIndex++
+                        break
+                    case 'add':
+                        reg[v1] += b
+                        break
+                    case 'mul':
+                        reg[v1] *= b
+                        break
+                    case 'div':
+                        reg[v1] = Math.floor(a / b)
+                        break
+                    case 'mod':
+                        reg[v1] %= b
+                        break
+                    case 'eql':
+                        reg[v1] = a === b ? 1 : 0
+                        break
+                    case 'log':
+                        console.log(a, v2 ?? '')
+                        break
+                    case 'ret':
+                        return a
+                }
+                console.log(line.padEnd(9), '=>', reg.Values().map(r => r.toString().padStart(2)).join('|'))
+            }
+        }
+
+        const memo = new BigMap<string, number[][] | null>()
+
+        function nextZ(step: number, w: number, z: number): number {
+            const s = steps[step]
+            let x = z % 26 + s.B === w ? 0 : 1
+            return (Math.floor(z / s.A) * (25 * x + 1)) + ((w + s.C) * x)
+        }
+
+        function AllValidSuffix(step: number, z: number): number[][] | null {
+            if (step === 14) return z === 0 ? [] : null
+            // const memoKey = step+','+z
+            // let found = memo.get(memoKey)
+            let result = null
+            for (let w = 1; w <= 9; w++) {
+                let nZ = nextZ(step, w, z)
+                const memoKey = (step + 1) + ',' + nZ
+                let allValid = memo.get(memoKey)
+                if (allValid === undefined) {
+                    allValid = AllValidSuffix(step + 1, nZ)
+                    memo.set(memoKey, allValid)
+                }
+                
+                if (allValid === null) continue
+                if (allValid.length === 0) return [[w]]
+                result ??= []
+                for (const valid of allValid) result.push([w].concat(valid))
+            }
+            return result
+        }
+
+        const answers = AllValidSuffix(0, 0)
+
+        if (answers) {
+            const s = answers.map(a => a.join('').toInt())
+            console.log(`Found ${s.length} valid. Min: ${s.Min()}, Max: ${s.Max()}`)
+        }
+        else {
+            console.log('Found no valids')
+        }
+    }
 }
 const startTime = process.hrtime()
-Advent2021.Day21_2()
+Advent2021.Day24()
 const time = process.hrtime(startTime)
 console.log(`Ran in ${time[0]}s ${time[1]/1_000_000}ms`)

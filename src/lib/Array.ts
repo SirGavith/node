@@ -1,6 +1,7 @@
 interface Array<T> {
     /** returns a shallow copy of an array */
     Copy(): T[]
+    set(index: number, value: T): void
     ReduceSum(lambda: (val: T, index: number) => number): number
     forEachPair(action: (value: T[], index: number[]) => void, allowDuplicates?: boolean, allowDoubles?: boolean): void
     forEachGroup(groupSize: number, action: (value: T[], index: number[]) => void, allowDuplicates?: boolean, allowDoubles?: boolean): void
@@ -38,6 +39,9 @@ Array.prototype.Copy = function() {
     })
     a.length = this.length
     return a
+}
+Array.prototype.set = function<T>(index: number, value: T) {
+    this[index] = value
 }
 Array.prototype.forEachPair = function(action: (value: any[], index: number[]) => void, allowDuplicates = true, allowDoubles = true) {
     const pairs: string[] = []
