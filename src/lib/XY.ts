@@ -41,6 +41,12 @@ export class XY {
         return new XY(this.X / xy.X, this.Y / xy.Y)
     }
     divEQ(n: nXY, n2?: number) { return this.set(this.div(n, n2)) }
+    mod(n: nXY, n2?: number) {
+        const xy = XY.parseInput(n, n2)
+        return new XY(this.X % xy.X, this.Y % xy.Y)
+    }
+    modEQ(n: nXY, n2?: number) { return this.set(this.mod(n, n2)) }
+
 
     EQ(xy: XY) { return xy.X === this.X && xy.Y === this.Y }
 
@@ -186,6 +192,30 @@ export class Array2D<T> {
         }
     }
 
+    every(lambda: (value: T | undefined, index: XY) => boolean): boolean {
+        for (let y = 0; y < this.Array.length; y++) {
+            for (let x = 0; x < this.Array[y]?.length; x++) {
+                let xy = new XY(x, y)
+                if (!lambda(this.get(xy), xy)) {
+                    return false
+                }
+            }
+        }
+        return true
+    }
+    
+    some(lambda: (value: T | undefined, index: XY) => boolean): boolean {
+        for (let y = 0; y < this.Array.length; y++) {
+            for (let x = 0; x < this.Array[y]?.length; x++) {
+                let xy = new XY(x, y)
+                if (lambda(this.get(xy), xy)) {
+                    return true
+                }
+            }
+        }
+        return false
+    }
+
     map<TT>(lambda: (value: T | undefined, index: XY) => TT | undefined) {
         const arr = new Array2D<TT>(this.Size)
         this.forEach((val, xy) => arr.set(xy, lambda(val, xy)))
@@ -208,7 +238,7 @@ export class Array2D<T> {
         console.log('[')
         this.Array.forEach(row => {
             // console.log('| '+row.map(v => (v === undefined ? '' : typeof v === "number" && v === Infinity ? '∞' : String(v)).padStart(3)).join())
-            console.log('| '+row.map(v => v ? '#' : '.').join(''))
+            console.log('| '+row.map(v => v ?? '.').join(''))
         })
         console.log(']')
 

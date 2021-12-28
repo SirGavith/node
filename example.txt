@@ -1,32 +1,9 @@
-inp w
-mul x 0
-add x z
-mod x 26
-div z A
-add x B
-eql x w
-eql x 0
-mul y 0
-add y 25
-mul y x
-add y 1
-mul z y
-mul y 0
-add y w
-add y C
-mul y x
-add z y 
-
-
-
-w = input; z = ?
-
-x = ((z % 26) + B) !== w
-
-z /= A
-
-z *= (25 * x) + 1
-
-z += (w + C) * x
-
-z' = 
+v...>>.vv>
+.vv>>.vv..
+>>.>v>...v
+>>v>>.>.v.
+v>v.vv.v..
+>.>>..v...
+.vv..>.>v.
+v.v..>>v.v
+....v..v.>

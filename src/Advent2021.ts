@@ -5,7 +5,7 @@ import { Array2D as Array2D, XY } from './lib/XY'
 import { Array3D, XYZ } from './lib/XYZ'
 import { Sorts, Files, Range } from './main'
 
-const UseExample = false,
+const UseExample = true,
     Data = Files.ReadAllLines(UseExample ? '../example.txt' : '../input.txt'),
     DataFull = Files.ReadFile(UseExample ? '../example.txt' : '../input.txt')
 
@@ -1684,8 +1684,38 @@ class Advent2021 {
             console.log('Found no valids')
         }
     }
+    static Day25() {
+        let d = Array2D.fromArray(Data.map(l => l.toArray().map(t => t === '.' ? undefined : t)))
+
+        function HalfStep(d: Array2D<string | undefined>, offset: XY, char: string) {
+
+            const newD = new Array2D<string>(d.Size)
+            d.forEach((t, xy) => {
+                if (!t) return
+                const newXY = xy.plus(offset).mod(d.Size)
+                newD.set(t === char || d.get(newXY) ? xy : newXY, t)
+            })
+            return newD
+        }
+
+        for (let i = 0; ; i++) {
+            let again = false
+            i.Log()
+            // d.Log()
+            let newD = HalfStep(HalfStep(d, new XY(1, 0), 'v'), new XY(0, 1), '>')
+            if (newD.some((t, xy) => t !== d.get(xy))) again = true
+            d = newD
+            
+            if (again) continue
+
+            (i + 1).Log()
+            break
+        }
+        d.Log()
+        
+    }
 }
 const startTime = process.hrtime()
-Advent2021.Day24()
+Advent2021.Day25()
 const time = process.hrtime(startTime)
 console.log(`Ran in ${time[0]}s ${time[1]/1_000_000}ms`)
