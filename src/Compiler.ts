@@ -1,26 +1,16 @@
-import { ExecOptions } from 'child_process';
-import { parse } from 'path/posix';
-import { threadId } from 'worker_threads';
-import { Word, Execute } from './Emulator'
-const instructions = [
-    'LDA',
-    'STO',
-    'ADD',
-    'SUB',
-    'JMP',
-    'JGE',
-    'JNE',
-    'STP'
-]
+import { execPath } from 'process';
+import { Word, instructionsMU0 } from './Emulator'
+import { Expression, ExpressionTypes, Lexer, OperationExpression, Operators, VariableExpression } from './Lexer';
+import { CustomError } from './lib/Error';
 
-class CompilerError extends Error {constructor(message: string) { super(message); this.name = this.constructor.name}}
-class AssemblerError extends Error {constructor(message: string) { super(message); this.name = this.constructor.name}}
+export class CompilerError extends CustomError { constructor(...message: any[]) { super(message); this.name = this.constructor.name} }
+export class AssemblerError extends CustomError { constructor(...message: any[]) { super(message); this.name = this.constructor.name} }
 
 function PreAssemble(c: string) {
     const code = c.SplitLines().filter(l => l.RegexTest(/\s*/)).map(l => l.trim())
     //generate assembly for assembly lines
     
-    const assembly = code.filter(line => line.split(' ').some(s => instructions.includes(s))),
+    const assembly = code.filter(line => line.split(' ').some(s => instructionsMU0.includes(s))),
         allocs = code.filter(line => line.startsWith('alloc'))
     //allocate memory words for all allocs
     //set those memory vals to initializer values
@@ -40,7 +30,7 @@ function PreAssemble(c: string) {
     //replace all assembly refrences of locations with the mem location
     assembly.forEach((line, memAddress) => {
         if (line.startsWith('@')) {
-            const identifier = line.split(' ')[0].substr(1)
+            const identifier = line.split(' ')[0].slice(1)
             if (!identifier) throw new CompilerError('An identifier must be present')
 
             assembly.forEach((line, i) => {
@@ -53,7 +43,6 @@ function PreAssemble(c: string) {
         }
     })
 
-    assembly.Log()
     return assembly
 }
 
@@ -61,9 +50,9 @@ function Assemble(assembly: string[]) {
     //to bytecode
     const bytecode: Word[] = assembly.map(line => {
         const spl = line.split(' ')
-        if ((spl.length === 2 || spl.length === 1) && instructions.includes(spl[0])) {
+        if ((spl.length === 2 || spl.length === 1) && instructionsMU0.includes(spl[0])) {
             //instruction statement
-            const instr = (instructions.indexOf(spl[0]) << 12) | (spl[1]?.toInt() ?? 0)
+            const instr = (instructionsMU0.indexOf(spl[0]) << 12) | (spl[1]?.toInt() ?? 0)
 
             return new Word(16, instr)
         }
@@ -73,13 +62,13 @@ function Assemble(assembly: string[]) {
         }
         else throw new AssemblerError(`Could not understand line '${line}'`)
     })
-    bytecode.map(w => w.toString()).Log()
+    bytecode.map(w => w.toString())
     return bytecode
 }
 
 // const assembly = PreAssemble(`
-//     alloc var1 := 0x4
-//     alloc var2 := 0x1
+//     alloc var1 = 0x4
+//     alloc var2 = 0x1
     
 //     @start LDA var1
 //     SUB var2
@@ -87,213 +76,239 @@ function Assemble(assembly: string[]) {
 //     LDA var1
 //     JNE start
 //     STP
-// `),
-//     bytecode = Assemble(assembly)
+// `)
 
+// const bytecode = Assemble(assembly)
+
+// console.log(assembly.join('\n'))
+
+
+// console.log(bytecode)
 // Execute(bytecode);
 
-// var v1 := 4
-// var v2 := 1
 
-// @start {
-//     @start var1 = var1 - var2
-// }
+/**
+
+let: v1 = 4
+let: v2 = 1
+
+@start {
+    @start var1 -= var2
+}
 
 
-// let a = 4,
-//     b = 1
+let:a=4,b=1
+if(a>b){a++;}else{a--;}
+b+=a
+while(b>0){b--;}
+
+declaration:
+    identifiers: a, b
+    initializers: a: 4, b: 1
+conditional:
+    condition: a>b
+        operation:
+            operation: greaterThan
+            operand: a
+            aperand2: b
+    body:
+        operation:
+            operation: increment
+            operand: a
+    else:
+        operation:
+            operation: decrement
+            operand: a
+operation:
+    operation: plusEQ
+    operand: b
+    operand2: a
+while:
+    condition: b>0
+        operation:
+            operation: greaterThan
+            operand: b
+            operand2: 0
+    body:
+        operation:
+            operation: decrement
+            operand: b
+
+**/
+
+export function CompilerMU1(exp: Expression): string[/** assembly */] { 
+    //branch to top of tree
+    const rand = () => (Math.random() * (10**5)).Floor()
+    switch (exp.Type) {
+        case ExpressionTypes.Compound: {
+            return exp.Expressions.flatMap(e => CompilerMU1(e))
+        }
+        case ExpressionTypes.Declaration: {
+            if (!exp.Identifiers) throw new CompilerError('Declaration expression', exp, 'requires identifiers')
+            return exp.Identifiers.flatMap(id => {
+                if (exp.Initializers[id]) {
+                    return [`alloc ${id}`, CompilerMU1(exp.Initializers[id]), `STA ${id}`].flat()
+                }
+                return [`alloc ${id}`]
+            })
+        }
+        case ExpressionTypes.If: {
+            if (!exp.Condition) throw new CompilerError('If expression', exp, 'requires a condition')
+            if (!exp.Body) throw new CompilerError('If expression', exp, 'requires a body')
+            const endJump = 'endJump' + rand()
+            const bodyJump = 'bodyJump' + rand()
+            return [CompilerMU1(exp.Condition), 
+                `JNZ ${bodyJump}`,
+                exp.ElseExpression ? CompilerMU1(exp.ElseExpression) : [],
+                `JMP ${endJump}`,
+                `@${bodyJump}`,
+                CompilerMU1(exp.Body),
+                `@${endJump}`].flat()
+        }
+        case ExpressionTypes.Literal: {
+            if (! exp.Value) throw new CompilerError('Literal expression', exp, 'requires a value')
+            return [`LDL ${exp.Value}`]
+        }
+        case ExpressionTypes.Operation: {
+            // Leave result in A reg
+            const leftTemp = 'leftTemp' + rand()
+            const rightTemp = 'rightTemp' + rand()
+            switch (exp.Operator) {
+                case Operators.And: {
+                    //Logical
+                    return
+                }
+                case Operators.Decrement: {
+                    if (!exp.Operand) throw new CompilerError('Decrement expression', exp, 'requires an operand')
+                    return [CompilerMU1(exp.Operand), `alloc ${rightTemp}`, `STA ${rightTemp}`,
+                            `LDL 0x1`, `SUB ${rightTemp}`].flat()
+                }
+                case Operators.Div: {
+                    throw new CompilerError('Division expressions are not currently implemented')
+                }
+                case Operators.DivEQ: {
+                    throw new CompilerError('Division expressions are not currently implemented')
+                }
+                case Operators.GreaterThan: {
+                    return
+                }
+                case Operators.GreaterThanEQ: {
+                    return
+                }
+                case Operators.Increment: {
+                    if (!exp.Operand) throw new CompilerError('Increment expression', exp, 'requires an operand')
+                    return [CompilerMU1(exp.Operand), `alloc ${rightTemp}`, `STA ${rightTemp}`,
+                            `LDL 0x1`, `ADD ${rightTemp}`].flat()
+                }
+                case Operators.IsEqual: {
+                    return
+                }
+                case Operators.IsNotEqual: {
+                    return
+                }
+                case Operators.LessThan: {
+                    return
+                }
+                case Operators.LessThanEQ: {
+                    return
+                }
+                case Operators.Minus: {
+                    if (!exp.Operand || !exp.Operand2) throw new CompilerError('Subtraction expression', exp, 'requires two operands')
+                    return [CompilerMU1(exp.Operand2), `alloc ${rightTemp}`, `STA ${rightTemp}`,
+                            CompilerMU1(exp.Operand), `SUB ${rightTemp}`].flat()
+                }
+                case Operators.MinusEQ: {
+                    if (!exp.Operand || !exp.Operand2) throw new CompilerError('Subtraction expression', exp, 'requires two operands')
+                    if (exp.Operand?.Type !== ExpressionTypes.Variable || !exp.Operand.Identifier) throw new CompilerError('Subtraction expression', exp, 'requires the operand two be a variable')
+
+                    return [CompilerMU1(exp.Operand2), `alloc ${rightTemp}`, `STA ${rightTemp}`,
+                            CompilerMU1(exp.Operand), `SUB ${rightTemp}`, `STA ${exp.Operand.Identifier}`].flat()
+                }
+                case Operators.Mod: {
+                    throw new CompilerError('Mod expressions are not currently implemented')
+                }
+                case Operators.ModEQ: {
+                    throw new CompilerError('Mod expressions are not currently implemented')
+                }
+                case Operators.Not: {
+                    //Logical
+                    throw new CompilerError('Not expressions are not currently implemented')
+                }
+                case Operators.Or: {
+                    //Logical
+                    throw new CompilerError('Or expressions are not currently implemented')
+                }
+                case Operators.Plus: {
+                    if (!exp.Operand || !exp.Operand2) throw new CompilerError('Addition expression', exp, 'requires two operands')
+                    return [CompilerMU1(exp.Operand2), `alloc ${rightTemp}`, `STA ${rightTemp}`,
+                            CompilerMU1(exp.Operand), `ADD ${rightTemp}`].flat()
+                }
+                case Operators.PlusEQ: {
+                    if (!exp.Operand || !exp.Operand2) throw new CompilerError('Addition expression', exp, 'requires two operands')
+                    if (exp.Operand?.Type !== ExpressionTypes.Variable || !exp.Operand.Identifier) throw new CompilerError('Addition expression', exp, 'requires the operand two be a variable')
+
+                    return [CompilerMU1(exp.Operand2), `ADD ${exp.Operand.Identifier}`, `STA ${exp.Operand.Identifier}`].flat()
+                }
+                case Operators.SetEquals: {
+                    if (!exp.Operand || !exp.Operand2) throw new CompilerError('Set Equals expression', exp, 'requires two operands')
+                    if (exp.Operand?.Type !== ExpressionTypes.Variable || !exp.Operand.Identifier) throw new CompilerError('Set Equals expression', exp, 'requires the operand two be a variable')
+                    
+                    return [CompilerMU1(exp.Operand2), `STA ${exp.Operand.Identifier}`].flat()
+                }
+                case Operators.Times: {
+                    throw new CompilerError('Multiplication expressions are not currently implemented')
+                }
+                case Operators.TimesEQ: {
+                    throw new CompilerError('Multiplication expressions are not currently implemented')
+                }
+                default: {
+                    throw new CompilerError('Unknown Operator', exp.Operator)
+                }
+            }
+        }
+        case ExpressionTypes.Variable: {
+            if (!exp.Identifier) throw new CompilerError('Variable expression', exp, 'requires an identifier')
+            return [`LDA ${exp.Identifier}`]
+        }
+        case ExpressionTypes.While: {
+            if (!exp.Condition) throw new CompilerError('If expression', exp, 'requires a condition')
+            if (!exp.Body) throw new CompilerError('If expression', exp, 'requires a body')
+            const conditionJump = 'conditionJump' + rand()
+            const bodyJump = 'bodyJump' + rand()
+            const endJump = 'endJump' + rand()
+            return [`@${conditionJump}`,
+                CompilerMU1(exp.Condition), 
+                `JNZ ${bodyJump}`,
+                `JMP ${endJump}`,
+                `@${bodyJump}`,
+                CompilerMU1(exp.Body),
+                `@${endJump}`].flat()
+        }
+        default: throw new CompilerError('unknown expression', exp)
+    }
+}
+
+// const c = Lexer(`
+// let: a = 4,
+//     b = 1;
 // if (a > b) {
-//     a++
+//     a++;
 // }
 // else {
-//     a--
-// }
-// b += a
+//     a--;
+// };
+// b += a;
 
-enum ExpressionTypes {
-    Compound,
-    Declaration,
-    If,
-    Literal,
-    Operation,
-    Unknown,
-    While,
-}
-enum Operators {
-    Plus,
-    Minus,
-    Times,
-    Div,
-    Mod,
-    Increment,
-    Decrement,
-    IncrementBy,
-    DecrementBy,
-    SetEquals,
-    IsEqual,
-    IsNotEqual,
-    Not
-}
+// while (b > 0) {
+//     b--;
+// };
+// `)
 
-abstract class Expression {
-    Type: ExpressionTypes = ExpressionTypes.Unknown
-}
-class CompoundExpression extends Expression {
-    override Type: ExpressionTypes.Compound = ExpressionTypes.Compound
-    Expressions: Expression[] = []
-}
-class DeclarationExpression extends Expression {
-    override Type: ExpressionTypes.Declaration = ExpressionTypes.Declaration
-    Identifiers: string[] = []
-    Initializers: {[key: string]: Expression} = {}
-}
-class IfExpression extends Expression {
-    override Type: ExpressionTypes.If = ExpressionTypes.If
-    Condition?: Expression
-    Body?: Expression
-    ElseExpression?: Expression
-}
-class LiteralExpression extends Expression {
-    override Type: ExpressionTypes.Literal = ExpressionTypes.Literal
-    Value?: number
-}
-class OperationExpression extends Expression {
-    override Type: ExpressionTypes.Operation = ExpressionTypes.Operation
-    Operand
-    Operator
-}
-class WhileExpression extends Expression {
-    override Type: ExpressionTypes.While = ExpressionTypes.While
-    Condition?: Expression
-    Body?: Expression
-}
+// const c = Lexer(`
+// let: x;
+// (x + 2) * (3-5)`)
 
+// const c = Lexer(`let:a=5;a+3;`)
+// c.Log()
 
-function Lexer(c: string) {
-    const keywords = [
-        'let',
-        'if',
-        'while'
-    ]
-
-    const code = c.replaceAll(/\s+/g, '').Log(),
-        identifiers: string[] = []
-
-    const parseExpr: ((code: string) => Expression) = (code: string) => {
-        const compound = new CompoundExpression
-        let lastsemi = 0,
-            exprLevel = 0
-        code.forEach((char, i) => {
-            if (char === '{') exprLevel++
-            else if (char === '}') exprLevel--
-            else if (char === ';' && exprLevel === 0) {
-                const expr = code.substring(lastsemi, i)
-
-                let word,
-                    rest
-                for (const [char, i] of expr.toArray().map((c, i) => [c, i] as [string, number])) {
-                    if (char.RegexTest(/\W/g)) {
-                        word = expr.slice(0, i)
-                        rest = expr.slice(i)
-                        break
-                    }
-                }
-                if (!word || !rest) {
-                    word = expr
-                    rest = ''
-                }
-
-                if (keywords.includes(word)) {
-                    if (word === 'let') {
-                        console.log('let', word, rest)
-
-                        const exp = new DeclarationExpression
-                        expr.slice(4).split(',').map(p => p.split('=')).forEach(decl => {
-                            const id = decl[0]
-                            if (decl.length === 1) {
-                                identifiers.push(id)
-                                exp.Identifiers.push(id)
-                            }
-                            else if (decl.length === 2) {
-                                identifiers.push(id)
-                                exp.Identifiers.push(id)
-                                exp.Initializers[id] = parseExpr(decl[1])
-                            }
-                        })
-                        compound.Expressions.push(exp)
-                    }
-                    else if (word === 'if') {
-                        const exp = new IfExpression
-                        //find parens for condition
-                        let parenDepth = 0
-                        for (const [char, i] of rest.toArray().WithIndices()) {
-                            if (char === '(') parenDepth++
-                            else if (char === ')' && parenDepth > 0) parenDepth--
-                            else if (char !== ')') continue
-                            exp.Condition = parseExpr(rest.substring(1, i))
-                            const elsePos = rest.indexOf('else', i)
-                            if (elsePos !== -1) {
-                                exp.Body = parseExpr(rest.substring(i, elsePos))
-                                exp.ElseExpression = parseExpr(rest.substring(elsePos + 4))
-                            }
-                            else {
-                                exp.Body = parseExpr(rest.substring(i))
-                            }
-                            break
-                        }
-                        if (!exp.Condition) throw new Error('Could not find while condition ' + rest)
-                        if (!exp.Body) throw new Error('Could not find while body ' + rest)
-                        return exp
-                    }
-                    else if (word === 'while') {
-                        const exp = new WhileExpression
-                        //find parens for condition
-                        //find expression
-                        let parenDepth = 0
-                        for (const [char, i] of rest.toArray().WithIndices()) {
-                            if (char === '(') parenDepth++
-                            else if (char === ')' && parenDepth > 0) parenDepth--
-                            else if (char !== ')') continue
-                            exp.Condition = parseExpr(rest.substring(1, i))
-                            exp.Body = parseExpr(rest.substring(i))
-                            break
-                        }
-                        if (!exp.Condition) throw new Error('Could not find while condition ' + rest)
-                        if (!exp.Body) throw new Error('Could not find while body ' + rest)
-                        return exp
-                    }
-                }
-                else if (identifiers.includes(word)) {
-
-                }
-                else if (word.RegexTest(/\d+/g)) {
-                    const exp = new LiteralExpression
-                    exp.Value = word.toInt()
-                    return exp
-                }
-                else throw new Error(`Unknown identifier ${word}`)
-
-
-                lastsemi = i + 1
-            }
-        })
-        return compound
-    }
-
-    return parseExpr(code).Log()
-}
-
-Lexer(`
-let: a = 4,
-    b = 1;
-if(a > b){
-    a++;
-} else{
-    a--;
-};
-b += a;
-
-while (b > 0) {
-    b--;
-};
-`)
+// CompilerMU1(c).Log()

@@ -6,6 +6,8 @@ interface Number {
     IsEven(): boolean
     IsOdd(): boolean
     SumOfLess(): number
+    Floor(): number
+    Ceil(): number
     Log(): number
 }
 Number.prototype.IsInteger = function() {
@@ -25,6 +27,12 @@ Number.prototype.IsOdd = function() {
 }
 Number.prototype.SumOfLess = function() {
     return this.valueOf() * (this.valueOf() + 1) * 0.5
+}
+Number.prototype.Floor = function() {
+    return Math.floor(this.valueOf())
+}
+Number.prototype.Ceil = function() {
+    return Math.ceil(this.valueOf())
 }
 Number.prototype.Log = function() {
     console.log(this)

@@ -83,9 +83,9 @@ require('./lib/LinkedList')
 
 // require('./ProjectEuler')
 // require('./Advent2020')
-require('./Advent2021')
+// require('./Advent2021')
 // require('./Linguistics')
 // require('./geology')
-// require('./Emulator')
+// require('./Lexer')
 // require('./Compiler')
-// 
+require('./Emulator')
