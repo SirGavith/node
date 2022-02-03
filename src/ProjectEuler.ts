@@ -1,3 +1,46 @@
+class GMath {
+    /**
+     * Generates an array composed of the action called for each value in the range.
+     * @param action The id of the employee.
+     * @param range The range of values.
+     * @returns The array of the action called for each value in the range.
+     */
+    static Comprehend<T extends numericals>(action: (i: T) => T, range: GRange<T>) {
+        return range.Array.map(i => action(i))
+    }
+}
+
+class GRange<T extends numericals> {
+    Min: T
+    Max: T
+    constructor(min: T, max: T) {
+        this.Min = min
+        this.Max = max
+    }
+
+    get Array() {
+        let out: Array<T> = []
+        for (let i = this.Min; i < this.Max; i++) {
+            out.push(i)
+        }
+        return out
+    }
+
+    *YArray() {
+        for (let i = this.Min; i < this.Max; i++) {
+            yield i
+        }
+    }
+
+    static DoubleForRange<T extends numericals>(r1: GRange<T>, r2: GRange<T>, action: (a: T, b: T) => void) {
+        for (let a = r1.Min; a <= r1.Max; a++) {
+            for (let b = r2.Min; b <= r2.Max; b++) {
+                action(a, b)
+            }
+        }
+    }
+}
+
 class ProjectEuler {
     static P16() {
         console.log(2n.Exp(1000n).SumDigits())
@@ -79,7 +122,7 @@ class ProjectEuler {
 
     static P35() {
         console.log(
-            new GRange<bigint>(2n, 1_000_000n).Array
+            new GRange<bigint>(2n, 100n).Array
             .filter(n => {
                 for (let i = 0; i < n.DigitCount(); i++) {
                     if (!n.IsPrime()) {
@@ -164,4 +207,4 @@ class ProjectEuler {
     }
 }
 
-ProjectEuler.P101()
+ProjectEuler.P35()

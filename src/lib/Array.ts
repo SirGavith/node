@@ -20,6 +20,7 @@ interface Array<T> {
     Frequency(val: T): number
     Frequencies(): [T, number][]
     MaxFrequency(): number
+    Random(): T
     RemoveUndefined(): NonNullable<T>[]
     WithIndices(): [T, number][]
     Indices(): number[]
@@ -54,6 +55,9 @@ Array.prototype.forEachPair = function(action: (value: any[], index: number[]) =
             }
         })
     })
+}
+Array.prototype.Random = function() {
+    return this[Math.floor((Math.random()*this.length))];
 }
 Array.prototype.forEachGroup = function(groupSize: number, action: (value: any[], index: number[]) => void, allowDuplicates = true, allowDoubles = true) {
     const pairs: string[] = []

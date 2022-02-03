@@ -950,53 +950,31 @@ export class Emu6502 {
 
     LoadROMfromAssembly(assembly: string[]) {
         const code = assembly.map(l => l.trim()).filter(l => l !== '').map(l => l.split(' '))
-        const identifiers = code.filter(l => l[0] === 'alloc').map((alloc, i) => [alloc[1], i] as const)
-        let instructions: [string, string][] = []
+        const allocs = code.filter(l => l[0] === 'alloc').map(alloc => alloc[1])
+        let instructions = code.map(l => 
+            l[0].startsWith('alloc') ? undefined :
+            l[0].startsWith('@') ? new Instruction(l[1], l[2], l[0].slice(1)) :
+            l.length === 2 ? new Instruction(l[0], l[1]) :
+            undefined
+            ).RemoveUndefined()
+        
+        instructions.forEach(i => {
+            const pos = allocs.indexOf(i.opr)
+            if (pos !== -1) i.opr = `$${pos.toString(16)}`
+        })
 
-        code.reduce((a, l) => {
-            if (l[0].startsWith('@')) { // labels
-                identifiers.push([l[0].slice(1), a])
-                l = l.slice(1)
-            }
-            if (l[0] && Emu6502.Instructions.includes(l[0])) {
-                a += AddressModeLengths[this.getInstructionMode(l as [string, string])]
-                instructions.push(l as [string, string])
-            }
-            return a
-        }, 0)
 
-        for (const [id, pos] of identifiers) {
-            instructions = instructions.map((inst, i) => inst[1] === id ? [inst[0], pos.toString(16)] : inst)
-        }
+        const identifiers = instructions.filter(i => i.label)
+
+        identifiers.forEach((instr, i) => {
+            instr
+
+        })
+
 
         console.log(instructions)
 
-        this.LoadROMfromBasicAssembly(instructions)
-    }
-
-    private getInstructionMode([instr, opr]: [string, string]): AddressModes | undef {
-        const opc = Emu6502.InstructionOpcodes[instr[0]],
-            hexDigits = opr.RegexTest(/\$[0-9A-F]+/) ? opr.slice(opr.indexOf('$') + 1) : '',
-            indexed = opr.includes('X') ? 'X' : opr.includes('Y') ? 'Y' : ''
-
-        if (!opr || opr === '') { // accumulator || implied; 1 byte
-            return AddressModes.Implied
-        } else if (opr === 'A') {
-            return AddressModes.Accumulator
-        } else if (opr.startsWith('(')) { // indirect; 3 or 2 bytes
-            return indexed === '' ? AddressModes.Indirect : indexed === 'X' ? AddressModes.IndirectX : AddressModes.IndirectY
-        }
-        else if (opr.startsWith('#')) { //immidiate; 2 bytes
-            return AddressModes.Immediate
-        }
-        else if (hexDigits.length === 4) { //absolute; 3 bytes
-            return indexed === '' ? AddressModes.Absolute : indexed === 'X' ? AddressModes.AbsoluteX : AddressModes.AbsoluteY
-        }
-        else if (hexDigits.length === 2) { // relative || zeropage; 2 bytes
-            return indexed === 'X' ? AddressModes.ZeropageX : indexed === 'Y' ? AddressModes.ZeropageY : AddressModes.Zeropage // or relative
-        }
-
-        return undefined
+        // this.LoadROMfromBasicAssembly(instructions)
     }
 
     private getInstructionLength(mode: AddressModes) {
@@ -1017,15 +995,15 @@ export class Emu6502 {
         }
     }
 
-    LoadROMfromBasicAssembly(assembly: [string, string][]) {
-        this.ROM = new Uint8Array(assembly.flatMap(([instr, opr]) => {
-            if (Emu6502.Instructions.includes(instr)) {
-                const inst = Emu6502.InstructionOpcodes[instr],
-                    hexDigits = opr.match(/\$[0-9A-F]+/)?.at(0) ?? '',
-                    mode = this.getInstructionMode([instr, opr]),
-                    opcode = (mode === AddressModes.Zeropage ? inst[AddressModes.Relative] : undefined) ?? inst[mode]
+    LoadROMfromBasicAssembly(assembly: Instruction[]) {
+        this.ROM = new Uint8Array(assembly.flatMap((instr) => {
+            if (Emu6502.Instructions.includes(instr.opc)) {
+                const inst = Emu6502.InstructionOpcodes[instr.opc],
+                    hexDigits = instr.opr.match(/\$[0-9A-F]+/)?.at(0) ?? '',
+                    mode = instr.InstructionMode,
+                    opcode: number | undefined = (mode === AddressModes.Zeropage ? inst[AddressModes.Relative] : undefined) ?? inst[mode]
 
-                if (opcode === undefined) throw new AssemblerError(`Could not understand line '${[instr, opr]}'`)
+                if (opcode === undefined) throw new AssemblerError(`Could not understand line '${instr.tuple}'`)
 
                 if (hexDigits.length === 4) {
                     return [opcode,
@@ -1038,8 +1016,7 @@ export class Emu6502 {
                 }
                 else return [opcode]
             }
-            throw new AssemblerError(`Could not understand line '${line}'`)
-        }))
+        }) as number[])
 
         this.ROM.forEach(short => short.toString(16).padStart(4, '0').Log())
     }
@@ -1059,6 +1036,30 @@ enum AddressModes {
     Zeropage,
     ZeropageX,
     ZeropageY
+}
+
+class Instruction {
+    constructor(public opc: string, public opr: string, public label?: string) {}
+    get tuple() { return [this.opc, this.opr] }
+    get InstructionMode(): AddressModes | undefined {
+        const hexDigits = this.opr.RegexTest(/\$[0-9A-F]+/) ? this.opr.slice(this.opr.indexOf('$') + 1) : '',
+            indexed = this.opr.includes('X') ? 'X' : this.opr.includes('Y') ? 'Y' : ''
+
+        if (!this.opr || this.opr === '') { // accumulator || implied; 1 byte
+            return AddressModes.Implied
+        } else if (this.opr === 'A') {
+            return AddressModes.Accumulator
+        } else if (this.opr.startsWith('(')) { // indirect; 3 or 2 bytes
+            return indexed === '' ? AddressModes.Indirect : indexed === 'X' ? AddressModes.IndirectX : AddressModes.IndirectY
+        } else if (this.opr.startsWith('#')) { //immidiate; 2 bytes
+            return AddressModes.Immediate
+        } else if (hexDigits.length === 4) { //absolute; 3 bytes
+            return indexed === '' ? AddressModes.Absolute : indexed === 'X' ? AddressModes.AbsoluteX : AddressModes.AbsoluteY
+        } else if (hexDigits.length === 2) { // relative || zeropage; 2 bytes
+            return indexed === 'X' ? AddressModes.ZeropageX : indexed === 'Y' ? AddressModes.ZeropageY : AddressModes.Zeropage // or relative
+        }
+        return undefined
+    }
 }
 
 interface InstructionSignature {
@@ -1093,27 +1094,30 @@ const AddressModeLengths = {
     [AddressModes.ZeropageY]: 2,
 }
 
-const e = new Emu6502
-e.LoadROMfromAssembly(`
-alloc x
-alloc y
-alloc z
+// const e = new Emu6502
+// e.LoadROMfromAssembly(`
+// alloc x
+// alloc y
+// alloc z
 
-LDA #$0
-STA x
-LDA #$1
-STA y
+// LDA #$0
+// STA x
+// LDA #$1
+// STA y
 
-LDA x
-LOG
-ADC y
-STA z
-LDA y
-STA x
-LDA z
-STA y
+// LDA x
+// LOG
+// ADC y
+// STA z
+// LDA y
+// STA x
+// LDA z
+// STA y
+
+// LDA x
+// CMP #255
 
 
-`.SplitLines())
+// `.SplitLines())
 
 // e.Execute()
