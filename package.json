@@ -1,8 +1,10 @@
 {
   "dependencies": {
-    "prompt-sync": "^4.2.0"
+    "prompt-sync": "^4.1.6",
+    "rss": "^1.2.2"
   },
   "devDependencies": {
-    "@types/node": "^17.0.14"
+    "@types/node": "^17.0.14",
+    "@types/rss": "^0.0.29"
   }
 }

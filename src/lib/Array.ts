@@ -18,7 +18,7 @@ interface Array<T> {
     BinarySearch(search: (value: T, index: number) => boolean): T
     Permutations(): T[][]
     Frequency(val: T): number
-    Frequencies(): [T, number][]
+    Frequencies(sort?: boolean): [T, number][]
     MaxFrequency(): number
     Random(): T
     RemoveUndefined(): NonNullable<T>[]
@@ -165,8 +165,9 @@ Array.prototype.Frequency = function<T>(val: T) {
     return (this as T[]).reduce((a, b) => a + (b === val ? 1 : 0), 0)
 }
 
-Array.prototype.Frequencies = function<T>() {
-    return (this as T[]).Uniques().map(u => [u, this.Frequency(u)])
+Array.prototype.Frequencies = function<T>(sort = false) {
+    const fs = (this as T[]).Uniques().map(u => [u, this.Frequency(u)] as [T, number])
+    return sort ? fs.sort((a, b) => b[1]-a[1]) : fs
 }
 Array.prototype.MaxFrequency = function<T>() {
     return (this as T[]).Uniques().reduce((max, u) => {

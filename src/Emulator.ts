@@ -250,10 +250,10 @@ export class MU1 {
 
     LoadROMfromBasicAssembly(assembly: string[]) {
         this.ROM = new Uint16Array(assembly.map(line => {
-            const spl = line.split(' ')
-            if (MU1.Instructions.includes(spl[0]) && (spl.length === 2 || spl.length === 1)) {
-
-                return (MU1.Instructions.indexOf(spl[0]) << 12) | (spl[1]?.toInt() ?? 0)
+            const spl = line.split(' '),
+                ind = MU1.Instructions.indexOf(spl[0])
+            if (ind != -1 && spl.length >= 1) {
+                return (ind << 12) | (spl[1]?.toInt() ?? 0)
             }
             else throw new AssemblerError(`Could not understand line '${line}'`)
         }))
@@ -323,10 +323,28 @@ export class MU1 {
 
 // mu1.Execute()
 
+enum AddressModes {
+    Accumulator,
+    Absolute,
+    AbsoluteX,
+    AbsoluteY,
+    Immediate,
+    Implied,
+    Indirect,
+    IndirectX,
+    IndirectY,
+    Relative,
+    Zeropage,
+    ZeropageX,
+    ZeropageY
+}
+
 export class Emu6502 {
     ROM?: Uint8Array
     RAM = new Uint8Array(0xFFFF)
     Stack = new Uint8Array(0xFF)
+
+    Debug = true
 
     //Registers
     readonly registers16 = new Uint8Array(1)
@@ -387,17 +405,66 @@ export class Emu6502 {
             this.ExecuteInstruction()
             this.PC++
         }
+        if (this.Debug) this.LogStatus()
     }
 
     ExecuteInstruction() {
         if (!this.ROM) throw new RuntimeError('Rom is empty')
-        this.Instructions[this.instr()]()
+        const opcode = this.instr(),
+            instr = this.Instructions[opcode]
+        if (this.Debug) {
+            const instructionSignature = Emu6502.InstructionOpcodes.Entries().filter(([_, v]) => 
+                (v as InstructionSignature).Entries().filter(([_, opc]) => opc === opcode).length > 0)[0] as [string, InstructionSignature]
+            const instString = instructionSignature[0]
+            const addressMode = (instructionSignature[1].Entries() as [string, number][]).filter(([_, opc]) => opc === opcode)[0][0].toInt()
+            const bytes = Instruction.AddressModeByteLengths[addressMode]
+            const num = bytes === 3 ? (this.instr(1) << 8 | this.instr(2)).toString(16) : 
+                        bytes === 2 ? this.instr(1).toString(16) : ''
+
+            this.LogStatus()
+
+            console.table({
+                [this.PC.toString()]: {
+                    opc: opcode,
+                    'Predicted instruction': (instString + ' ' + (
+                        addressMode === AddressModes.Absolute ? `$${num}` :
+                        addressMode === AddressModes.AbsoluteX ? `$${num},X` :
+                        addressMode === AddressModes.AbsoluteY ? `$${num},Y` :
+                        addressMode === AddressModes.Accumulator ? `A` :
+                        addressMode === AddressModes.Immediate ? `#$${num}` :
+                        addressMode === AddressModes.Implied ? `` :
+                        addressMode === AddressModes.Indirect ? `($${num})` :
+                        addressMode === AddressModes.IndirectX ? `($${num},X)` :
+                        addressMode === AddressModes.IndirectY ? `($${num}),Y` :
+                        addressMode === AddressModes.Relative ? `$${num}` :
+                        addressMode === AddressModes.Zeropage ? `$${num}` :
+                        addressMode === AddressModes.ZeropageX ? `$${num},X` :
+                        addressMode === AddressModes.ZeropageY ? `$${num},Y` :
+                        undefined
+                    )).trim()
+                }
+            })
+        }
+
+        instr()
     }
     instr(offset = 0) { return this.ROM![this.PC + offset]}
     get nextByte() { this.PC++; return this.instr()}
     get nextWord() { this.PC += 2; return this.instr() << 8 | this.instr(-1)}
 
     getRAMWord(memAddress: number) { return (this.RAM[(memAddress + 1) & 0xFF] << 8) | this.RAM[memAddress] }
+    LogStatus() { 
+        console.table({
+            'A-Register': this.ToMultiString(this.A),
+            'X-Register': this.ToMultiString(this.X),
+            'Y-Register': this.ToMultiString(this.Y),
+            'Program Counter': this.PC,
+            '': '[NV-BDIZC]',
+            'Status Register': this.SR.toString(2).padStart(8, '0')
+        })
+
+        console.table(this.RAM.slice(0, 3))
+    }
 
     get AdrAbsolute() { return this.nextWord }
     get AdrAbsoluteX() { return (this.nextWord + this.X) & 0xFFFF }
@@ -409,15 +476,20 @@ export class Emu6502 {
     get AdrZeropage() { return this.nextByte }
     get AdrZeropageX() { return (this.nextByte + this.X) & 0xFF }
     get AdrZeropageY() { return (this.nextByte + this.X) & 0xFF }
-    
 
+    private ToMultiString(n: number) {
+        return `0b${n.toString(2)}  ${n.toString(10)}  0x${n.toString(16)}`
+    }
+    /** @param arg Addition operand */
     ADC(arg: number) {
         const sum = this.A + arg + this.Carry
         this.Carry = sum > 0xFF ? 1 : 0
         this.Overflow = ~(this.A ^ arg) & (this.A ^ sum) & 0x80
         this.setNZA(sum)
     }
+    /** @param arg And operand */
     AND(arg: number) { this.setNZA(this.A & arg) }
+    /** @param memAddress Memory address to ASL; defaults to A register */
     ASL(memAddress?: number) {
         const val = memAddress ? this.RAM[memAddress] : this.A
         this.Carry = val >> 7 & 1
@@ -429,41 +501,63 @@ export class Emu6502 {
             this.setNZA(this.A << 1 & 0xFF)
         }
     }
+    /** @param arg Branch destination memory address */
     BCC(arg: number) { if (this.Carry === 0) this.PC = arg }
+    /** @param arg Branch destination memory address */
     BCS(arg: number) { if (this.Carry === 1) this.PC = arg }
+    /** @param arg Branch destination memory address */
     BEQ(arg: number) { if (this.Zero === 1) this.PC = arg }
+    /** @param arg Bit test operand */
     BIT(arg: number) {
-        this.SR = this.SR & 0x3D | (arg & 0xC0) | ((this.A & arg) === 0 ? 2 : 1)
-
+        this.SR = this.SR & 0x3D | (arg & 0xC0) | ((this.A & arg) === 0 ? 2 : 0)
     }
+    /** @param arg Branch destination memory address */
     BMI(arg: number) { if (this.Negative === 1) this.PC = arg }
+    /** @param arg Branch destination memory address */
     BNE(arg: number) { if (this.Zero === 0) this.PC = arg }
+    /** @param arg Branch destination memory address */
     BPL(arg: number) { if (this.Negative === 0) this.PC = arg }
+
     BRK() {} //TODO: www.masswerk.at/6502/6502_instruction_set.html#BRK
+    /** @param arg Branch destination memory address */
     BVC(arg: number) { if (this.Overflow === 0) this.PC = arg }
+    /** @param arg Branch destination memory address */
     BVS(arg: number) { if (this.Overflow === 1) this.PC = arg }
     CLC() { this.Carry = 0 }
     CLD() { this.Decimal = 0 }
     CLI() { this.Interrupt = 0 }
     CLV() { this.Overflow = 0 }
+    /** @param arg Compare operand */
     CMP(arg: number) { this.setNZC(this.A - arg, this.A >= arg ? 1 : 0) }
+    /** @param arg Compare operand */
     CPX(arg: number) { this.setNZC(this.X - arg, this.A >= arg ? 1 : 0) }
+    /** @param arg Compare operand */
     CPY(arg: number) { this.setNZC(this.Y - arg, this.A >= arg ? 1 : 0) }
-    DEC(memLocation: number) { this.setNZ(this.RAM[memLocation] - 1) }
+    /** @param memAddress DEC memAddress */
+    DEC(memAddress: number) { this.setNZ(this.RAM[memAddress] - 1) }
     DEX() { this.setNZ(--this.X) }
     DEY() { this.setNZ(--this.X) }
+    /** @param arg Compare operand */
     EOR(arg: number) { this.setNZA(this.A ^ arg) }
-    INC(memLocation: number) { this.setNZ(this.RAM[memLocation] + 1) }
+    /** @param memAddress INC Destination memAddress */
+    INC(memAddress: number) { this.setNZ(++this.RAM[memAddress]) }
     INX() { this.setNZ(++this.X) }
-    INY() { this.setNZ(+this.X) }
+    INY() { this.setNZ(++this.Y) }
+    /** @param arg Jump destination memory address */
     JMP(arg: number) { this.PC = arg }
+    /** @param arg JSR subroutine memory address */
     JSR(arg: number) {
         this.StackPush(this.PC + 2)
         this.PC = arg
     } 
+    /** @param arg LDA value */
     LDA(arg: number) { this.A = arg }
+    /** @param arg LDX value */
     LDX(arg: number) { this.X = arg }
+    /** @param arg LDY value */
     LDY(arg: number) { this.Y = arg }
+    LOG() { console.log(`0b${this.A.toString(2)}   ${this.A.toString(10)}   0x${this.A.toString(16)}`) }
+    /** @param memAddress Memory address to LSR; defaults to A register */
     LSR(memAddress?: number) {
         const val = memAddress ? this.RAM[memAddress] : this.A
         this.Carry = val & 1
@@ -476,11 +570,13 @@ export class Emu6502 {
         }
     }
     NOP() {}
+    /** @param arg ORA value */
     ORA(arg: number) { this.setNZA(this.A | arg) }
     PHA() { this.StackPush(this.A) }
     PHP() { this.StackPush(this.SR | 0x30) }
     PLA() { this.setNZA(this.StackPull()) }
     PLP() { this.SR = this.StackPull() & 0xCF }
+    /** @param memAddress Memory address to ROL; defaults to A register */
     ROL(memAddress?: number) {
         const val = memAddress ? this.RAM[memAddress] : this.A
         const c = this.Carry
@@ -492,6 +588,7 @@ export class Emu6502 {
             this.setNZA(val << 1 | c & 0xFF)
         }
     }
+    /** @param memAddress Memory address to ROR; defaults to A register */
     ROR(memAddress?: number) {
         const val = memAddress ? this.RAM[memAddress] : this.A
         const c = this.Carry
@@ -508,12 +605,16 @@ export class Emu6502 {
         this.PC = this.StackPull()
     }
     RTS() { this.PC = this.StackPull() + 1 }
+    /** @param arg SBC operand */
     SBC(arg: number) { this.ADC(~arg) }
     SEC() { this.Carry = 1 }
     SED() { this.Decimal = 1 }
     SEI() { this.Interrupt = 1 }
+    /** @param memAddress STA Destination memAddress */
     STA(memLocation: number) { this.RAM[memLocation] = this.A }
+    /** @param memAddress STX Destination memAddress */
     STX(memLocation: number) { this.RAM[memLocation] = this.X }
+    /** @param memAddress STA Destination memAddress */
     STY(memLocation: number) { this.RAM[memLocation] = this.Y }
     TAX() { this.X = this.A }
     TAY() { this.Y = this.A }
@@ -522,98 +623,97 @@ export class Emu6502 {
     TXS() { this.SP = this.X }
     TYA() { this.A = this.Y }
 
-
     Instructions: {[opcode: number]: () => void} = {
         0x00: () => { this.BRK() }, /** BRK impl  */
         0x01: () => { this.ORA(this.RAM[this.AdrXIndirect]) }, /** ORA X,ind	*/
         0x05: () => { this.ORA(this.RAM[this.AdrZeropage]) }, /** ORA zpg	*/
-        0x06: () => { this.ASL(this.RAM[this.AdrZeropage]) }, /** ASL zpg	*/
+        0x06: () => { this.ASL(this.AdrZeropage) }, /** ASL zpg	*/
         0x08: () => { this.PHP() }, /** PHP impl	*/
         0x09: () => { this.ORA(this.nextByte) }, /** ORA #	    */
         0x0A: () => { this.ASL() }, /** ASL A	    */
         0x0D: () => { this.ORA(this.RAM[this.AdrAbsolute]) }, /** ORA abs	*/
-        0x0E: () => { this.ASL(this.RAM[this.AdrAbsolute]) }, /** ASL abs	*/
-        0x10: () => { this.BPL(this.RAM[this.AdrRelative]) }, /** BPL rel	*/
+        0x0E: () => { this.ASL(this.AdrAbsolute) }, /** ASL abs	*/
+        0x10: () => { this.BPL(this.AdrRelative) }, /** BPL rel	*/
         0x11: () => { this.ORA(this.RAM[this.AdrIndirectY]) }, /** ORA ind,Y	*/
         0x15: () => { this.ORA(this.RAM[this.AdrZeropageX]) }, /** ORA zpg,X	*/
-        0x16: () => { this.ASL(this.RAM[this.AdrZeropageX]) }, /** ASL zpg,X	*/
+        0x16: () => { this.ASL(this.AdrZeropageX) }, /** ASL zpg,X	*/
         0x18: () => { this.CLC() }, /** CLC impl	*/
         0x19: () => { this.ORA(this.RAM[this.AdrAbsoluteY]) }, /** ORA abs,Y	*/
         0x1D: () => { this.ORA(this.RAM[this.AdrAbsoluteX]) }, /** ORA abs,X	*/
-        0x1E: () => { this.ASL(this.RAM[this.AdrAbsoluteX]) }, /** ASL abs,X	*/
-        0x20: () => { this.JSR(this.RAM[this.AdrAbsolute]) }, /** JSR abs	*/
+        0x1E: () => { this.ASL(this.AdrAbsoluteX) }, /** ASL abs,X	*/
+        0x20: () => { this.JSR(this.AdrAbsolute) }, /** JSR abs	*/
         0x21: () => { this.AND(this.RAM[this.AdrXIndirect]) }, /** AND X,ind	*/
         0x24: () => { this.BIT(this.RAM[this.AdrZeropage]) }, /** BIT zpg	*/
         0x25: () => { this.AND(this.RAM[this.AdrZeropage]) }, /** AND zpg	*/
-        0x26: () => { this.ROL(this.RAM[this.AdrZeropage]) }, /** ROL zpg	*/
+        0x26: () => { this.ROL(this.AdrZeropage) }, /** ROL zpg	*/
         0x28: () => { this.PLP() }, /** PLP impl	*/
         0x29: () => { this.AND(this.nextByte) }, /** AND #      */
         0x2A: () => { this.ROL() }, /** ROL A      */
         0x2C: () => { this.BIT(this.RAM[this.AdrAbsolute]) }, /** BIT abs	*/
         0x2D: () => { this.AND(this.RAM[this.AdrAbsolute]) }, /** AND abs	*/
-        0x2E: () => { this.ROL(this.RAM[this.AdrAbsolute]) }, /** ROL abs    */
-        0x30: () => { this.BMI(this.RAM[this.AdrRelative]) }, /** BMI rel	*/
+        0x2E: () => { this.ROL(this.AdrAbsolute) }, /** ROL abs    */
+        0x30: () => { this.BMI(this.AdrRelative) }, /** BMI rel	*/
         0x31: () => { this.AND(this.RAM[this.AdrIndirectY]) }, /** AND ind,Y	*/
         0x35: () => { this.AND(this.RAM[this.AdrZeropageX]) }, /** AND zpg,X	*/
-        0x36: () => { this.ROL(this.RAM[this.AdrZeropageX]) }, /** ROL zpg,X	*/
+        0x36: () => { this.ROL(this.AdrZeropageX) }, /** ROL zpg,X	*/
         0x38: () => { this.SEC() }, /** SEC impl	*/
         0x39: () => { this.AND(this.RAM[this.AdrAbsoluteY]) }, /** AND abs,Y	*/
         0x3D: () => { this.AND(this.RAM[this.AdrAbsoluteX]) }, /** AND abs,X	*/
-        0x3E: () => { this.ROL(this.RAM[this.AdrAbsoluteX]) }, /** ROL abs,X	*/
+        0x3E: () => { this.ROL(this.AdrAbsoluteX) }, /** ROL abs,X	*/
         0x40: () => { this.RTI() }, /** RTI impl	*/
         0x41: () => { this.EOR(this.RAM[this.AdrXIndirect]) }, /** EOR X,ind	*/
         0x45: () => { this.EOR(this.RAM[this.AdrZeropage]) }, /** EOR zpg	*/
-        0x46: () => { this.LSR(this.RAM[this.AdrZeropage]) }, /** LSR zpg	*/
+        0x46: () => { this.LSR(this.AdrZeropage) }, /** LSR zpg	*/
         0x48: () => { this.PHA() }, /** PHA impl	*/
         0x49: () => { this.EOR(this.nextByte) }, /** EOR #	    */
         0x4A: () => { this.LSR() }, /** LSR A	    */
-        0x4C: () => { this.JMP(this.RAM[this.AdrAbsolute]) }, /** JMP abs	*/
+        0x4C: () => { this.JMP(this.AdrAbsolute) }, /** JMP abs	*/
         0x4D: () => { this.EOR(this.RAM[this.AdrAbsolute]) }, /** EOR abs	*/
-        0x4E: () => { this.LSR(this.RAM[this.AdrAbsolute]) }, /** LSR abs	*/
-        0x50: () => { this.BVC(this.RAM[this.AdrRelative]) }, /** BVC rel	*/
+        0x4E: () => { this.LSR(this.AdrAbsolute) }, /** LSR abs	*/
+        0x50: () => { this.BVC(this.AdrRelative) }, /** BVC rel	*/
         0x51: () => { this.EOR(this.RAM[this.AdrIndirectY]) }, /** EOR ind,Y	*/
         0x55: () => { this.EOR(this.RAM[this.AdrZeropageX]) }, /** EOR zpg,X	*/
-        0x56: () => { this.LSR(this.RAM[this.AdrZeropageX]) }, /** LSR zpg,X	*/
+        0x56: () => { this.LSR(this.AdrZeropageX) }, /** LSR zpg,X	*/
         0x58: () => { this.CLI() }, /** CLI impl	*/
         0x59: () => { this.EOR(this.RAM[this.AdrAbsoluteY]) }, /** EOR abs,Y	*/
         0x5D: () => { this.EOR(this.RAM[this.AdrAbsoluteX]) }, /** EOR abs,X	*/
-        0x5E: () => { this.LSR(this.RAM[this.AdrAbsoluteX]) }, /** LSR abs,X	*/
+        0x5E: () => { this.LSR(this.AdrAbsoluteX) }, /** LSR abs,X	*/
         0x60: () => { this.RTS() }, /** RTS impl	*/
         0x61: () => { this.ADC(this.RAM[this.AdrXIndirect]) }, /** ADC X,ind	*/
         0x65: () => { this.ADC(this.RAM[this.AdrZeropage]) }, /** ADC zpg	*/
-        0x66: () => { this.ROR(this.RAM[this.AdrZeropage]) }, /** ROR zpg	*/
+        0x66: () => { this.ROR(this.AdrZeropage) }, /** ROR zpg	*/
         0x68: () => { this.PLA() }, /** PLA impl	*/
         0x69: () => { this.ADC(this.nextByte) }, /** ADC #	    */
         0x6A: () => { this.ROR() }, /** ROR A	    */
-        0x6C: () => { this.JMP(this.RAM[this.AdrIndirect]) }, /** JMP ind	*/
+        0x6C: () => { this.JMP(this.AdrIndirect) }, /** JMP ind	*/
         0x6D: () => { this.ADC(this.RAM[this.AdrAbsolute]) }, /** ADC abs	*/
-        0x6E: () => { this.ROR(this.RAM[this.AdrAbsolute]) }, /** ROR abs	*/
-        0x70: () => { this.BVS(this.RAM[this.AdrRelative]) }, /** BVS rel	*/
+        0x6E: () => { this.ROR(this.AdrAbsolute) }, /** ROR abs	*/
+        0x70: () => { this.BVS(this.AdrRelative) }, /** BVS rel	*/
         0x71: () => { this.ADC(this.RAM[this.AdrIndirectY]) }, /** ADC ind,Y	*/
         0x75: () => { this.ADC(this.RAM[this.AdrZeropageX]) }, /** ADC zpg,X	*/
-        0x76: () => { this.ROR(this.RAM[this.AdrZeropageX]) }, /** ROR zpg,X	*/
+        0x76: () => { this.ROR(this.AdrZeropageX) }, /** ROR zpg,X	*/
         0x78: () => { this.SEI() }, /** SEI impl	*/
         0x79: () => { this.ADC(this.RAM[this.AdrAbsoluteY]) }, /** ADC abs,Y	*/
         0x7D: () => { this.ADC(this.RAM[this.AdrAbsoluteX]) }, /** ADC abs,X	*/
-        0x7E: () => { this.ROR(this.RAM[this.AdrAbsoluteX]) }, /** ROR abs,X	*/
-        0x81: () => { this.STA(this.RAM[this.AdrXIndirect]) }, /** STA X,ind	*/
-        0x84: () => { this.STY(this.RAM[this.AdrZeropage]) }, /** STY zpg	*/
-        0x85: () => { this.STA(this.RAM[this.AdrZeropage]) }, /** STA zpg	*/
-        0x86: () => { this.STX(this.RAM[this.AdrZeropage]) }, /** STX zpg	*/
+        0x7E: () => { this.ROR(this.AdrAbsoluteX) }, /** ROR abs,X	*/
+        0x81: () => { this.STA(this.AdrXIndirect) }, /** STA X,ind	*/
+        0x84: () => { this.STY(this.AdrZeropage) }, /** STY zpg	*/
+        0x85: () => { this.STA(this.AdrZeropage) }, /** STA zpg	*/
+        0x86: () => { this.STX(this.AdrZeropage) }, /** STX zpg	*/
         0x88: () => { this.DEY() }, /** DEY impl	*/
         0x8A: () => { this.TXA() }, /** TXA impl	*/
-        0x8C: () => { this.STY(this.RAM[this.AdrAbsolute]) }, /** STY abs	*/
-        0x8D: () => { this.STA(this.RAM[this.AdrAbsolute]) }, /** STA abs	*/
-        0x8E: () => { this.STX(this.RAM[this.AdrAbsolute]) }, /** STX abs	*/
-        0x90: () => { this.BCC(this.RAM[this.AdrRelative]) }, /** BCC rel	*/
-        0x91: () => { this.STA(this.RAM[this.AdrIndirectY]) }, /** STA ind,Y	*/
-        0x94: () => { this.STY(this.RAM[this.AdrZeropageX]) }, /** STY zpg,X	*/
-        0x95: () => { this.STA(this.RAM[this.AdrZeropageX]) }, /** STA zpg,X	*/
-        0x96: () => { this.STX(this.RAM[this.AdrZeropageY]) }, /** STX zpg,Y	*/
+        0x8C: () => { this.STY(this.AdrAbsolute) }, /** STY abs	*/
+        0x8D: () => { this.STA(this.AdrAbsolute) }, /** STA abs	*/
+        0x8E: () => { this.STX(this.AdrAbsolute) }, /** STX abs	*/
+        0x90: () => { this.BCC(this.AdrRelative) }, /** BCC rel	*/
+        0x91: () => { this.STA(this.AdrIndirectY) }, /** STA ind,Y	*/
+        0x94: () => { this.STY(this.AdrZeropageX) }, /** STY zpg,X	*/
+        0x95: () => { this.STA(this.AdrZeropageX) }, /** STA zpg,X	*/
+        0x96: () => { this.STX(this.AdrZeropageY) }, /** STX zpg,Y	*/
         0x98: () => { this.TYA() }, /** TYA impl	*/
-        0x99: () => { this.STA(this.RAM[this.AdrAbsoluteY]) }, /** STA abs,Y	*/
+        0x99: () => { this.STA(this.AdrAbsoluteY) }, /** STA abs,Y	*/
         0x9A: () => { this.TXS() }, /** TXS impl	*/
-        0x9D: () => { this.STA(this.RAM[this.AdrAbsoluteX]) }, /** STA abs,X	*/
+        0x9D: () => { this.STA(this.AdrAbsoluteX) }, /** STA abs,X	*/
         0xA0: () => { this.LDY(this.nextByte) }, /** LDY #	    */
         0xA1: () => { this.LDA(this.RAM[this.AdrXIndirect]) }, /** LDA X,ind	*/
         0xA2: () => { this.LDX(this.nextByte) }, /** LDX #	    */
@@ -626,7 +726,7 @@ export class Emu6502 {
         0xAC: () => { this.LDY(this.RAM[this.AdrAbsolute]) }, /** LDY abs	*/
         0xAD: () => { this.LDA(this.RAM[this.AdrAbsolute]) }, /** LDA abs	*/
         0xAE: () => { this.LDX(this.RAM[this.AdrAbsolute]) }, /** LDX abs	*/
-        0xB0: () => { this.BCS(this.RAM[this.AdrRelative]) }, /** BCS rel	*/
+        0xB0: () => { this.BCS(this.AdrRelative) }, /** BCS rel	*/
         0xB1: () => { this.LDA(this.RAM[this.AdrIndirectY]) }, /** LDA ind,Y	*/
         0xB4: () => { this.LDY(this.RAM[this.AdrZeropageX]) }, /** LDY zpg,X	*/
         0xB5: () => { this.LDA(this.RAM[this.AdrZeropageX]) }, /** LDA zpg,X	*/
@@ -641,309 +741,306 @@ export class Emu6502 {
         0xC1: () => { this.CMP(this.RAM[this.AdrXIndirect]) }, /** CMP X,ind	*/
         0xC4: () => { this.CPY(this.RAM[this.AdrZeropage]) }, /** CPY zpg	*/
         0xC5: () => { this.CMP(this.RAM[this.AdrZeropage]) }, /** CMP zpg	*/
-        0xC6: () => { this.DEC(this.RAM[this.AdrZeropage]) }, /** DEC zpg	*/
+        0xC6: () => { this.DEC(this.AdrZeropage) }, /** DEC zpg	*/
         0xC8: () => { this.INY() }, /** INY impl	*/
         0xC9: () => { this.CMP(this.nextByte) }, /** CMP #	    */
         0xCA: () => { this.DEX() }, /** DEX impl	*/
         0xCC: () => { this.CPY(this.RAM[this.AdrAbsolute]) }, /** CPY abs	*/
         0xCD: () => { this.CMP(this.RAM[this.AdrAbsolute]) }, /** CMP abs	*/
-        0xCE: () => { this.DEC(this.RAM[this.AdrAbsolute]) }, /** DEC abs	*/
-        0xD0: () => { this.BNE(this.RAM[this.AdrRelative]) }, /** BNE rel	*/
+        0xCE: () => { this.DEC(this.AdrAbsolute) }, /** DEC abs	*/
+        0xD0: () => { this.BNE(this.AdrRelative) }, /** BNE rel	*/
         0xD1: () => { this.CMP(this.RAM[this.AdrIndirectY]) }, /** CMP ind,Y	*/
         0xD5: () => { this.CMP(this.RAM[this.AdrZeropageX]) }, /** CMP zpg,X	*/
-        0xD6: () => { this.DEC(this.RAM[this.AdrZeropageX]) }, /** DEC zpg,X	*/
+        0xD6: () => { this.DEC(this.AdrZeropageX) }, /** DEC zpg,X	*/
         0xD8: () => { this.CLD() }, /** CLD impl	*/
         0xD9: () => { this.CMP(this.RAM[this.AdrAbsoluteY]) }, /** CMP abs,Y	*/
         0xDD: () => { this.CMP(this.RAM[this.AdrAbsoluteX]) }, /** CMP abs,X	*/
-        0xDE: () => { this.DEC(this.RAM[this.AdrAbsoluteX]) }, /** DEC abs,X	*/
+        0xDE: () => { this.DEC(this.AdrAbsoluteX) }, /** DEC abs,X	*/
         0xE0: () => { this.CPX(this.nextByte) }, /** CPX #	    */
         0xE1: () => { this.SBC(this.RAM[this.AdrXIndirect]) }, /** SBC X,ind	*/
         0xE4: () => { this.CPX(this.RAM[this.AdrZeropage]) }, /** CPX zpg	*/
         0xE5: () => { this.SBC(this.RAM[this.AdrZeropage]) }, /** SBC zpg	*/
-        0xE6: () => { this.INC(this.RAM[this.AdrZeropage]) }, /** INC zpg	*/
+        0xE6: () => { this.INC(this.AdrZeropage) }, /** INC zpg	*/
         0xE8: () => { this.INX() }, /** INX impl	*/
         0xE9: () => { this.SBC(this.nextByte) }, /** SBC #	    */
         0xEA: () => { this.NOP() }, /** NOP impl	*/
         0xEC: () => { this.CPX(this.RAM[this.AdrAbsolute]) }, /** CPX abs	*/
         0xED: () => { this.SBC(this.RAM[this.AdrAbsolute]) }, /** SBC abs	*/
-        0xEE: () => { this.INC(this.RAM[this.AdrAbsolute]) }, /** INC abs	*/
-        0xF0: () => { this.BEQ(this.RAM[this.AdrRelative]) }, /** BEQ rel	*/
+        0xEE: () => { this.INC(this.AdrAbsolute) }, /** INC abs	*/
+        0xF0: () => { this.BEQ(this.AdrRelative) }, /** BEQ rel	*/
         0xF1: () => { this.SBC(this.RAM[this.AdrIndirectY]) }, /** SBC ind,Y	*/
         0xF5: () => { this.SBC(this.RAM[this.AdrZeropageX]) }, /** SBC zpg,X	*/
-        0xF6: () => { this.INC(this.RAM[this.AdrZeropageX]) }, /** INC zpg,X	*/
+        0xF6: () => { this.INC(this.AdrZeropageX) }, /** INC zpg,X	*/
         0xF8: () => { this.SED() }, /** SED impl	*/
         0xF9: () => { this.SBC(this.RAM[this.AdrAbsoluteY]) }, /** SBC abs,Y	*/
+        0xFA: () => { this.LOG() }, /** LOG impl */
         0xFD: () => { this.SBC(this.RAM[this.AdrAbsoluteX]) }, /** SBC abs,X	*/
-        0xFE: () => { this.INC(this.RAM[this.AdrAbsoluteX]) }, /** INC abs,X	*/
-        0xFF: () => { console.log(this.A) }
+        0xFE: () => { this.INC(this.AdrAbsoluteX) }, /** INC abs,X	*/
     }
-
-
-    
 
     static readonly InstructionOpcodes: {[instruction: string]: InstructionSignature} = {
         ADC: {
-            immediate: 0x69,
-            zeropage: 0x65,
-            zeropageX: 0x75,
-            absolute: 0x6D,
-            absoluteX: 0x7D,
-            absoluteY: 0x79,
-            indirectX: 0x61,
-            indirectY: 0x71,
+            [AddressModes.Immediate]: 0x69,
+            [AddressModes.Zeropage]: 0x65,
+            [AddressModes.ZeropageX]: 0x75,
+            [AddressModes.Absolute]: 0x6D,
+            [AddressModes.AbsoluteX]: 0x7D,
+            [AddressModes.AbsoluteY]: 0x79,
+            [AddressModes.IndirectX]: 0x61,
+            [AddressModes.IndirectY]: 0x71,
         },
         AND: {
-            immediate: 0x29,
-            zeropage: 0x25,
-            zeropageX: 0x35,
-            absolute: 0x2D,
-            absoluteX: 0x3D,
-            absoluteY: 0x39,
-            indirectX: 0x21,
-            indirectY: 0x31,
+            [AddressModes.Immediate]: 0x29,
+            [AddressModes.Zeropage]: 0x25,
+            [AddressModes.ZeropageX]: 0x35,
+            [AddressModes.Absolute]: 0x2D,
+            [AddressModes.AbsoluteX]: 0x3D,
+            [AddressModes.AbsoluteY]: 0x39,
+            [AddressModes.IndirectX]: 0x21,
+            [AddressModes.IndirectY]: 0x31,
         },
         ASL: {
-            accumulator: 0x0A,
-            zeropage: 0x06,
-            zeropageX: 0x16,
-            absolute: 0x0E,
-            absoluteX: 0x1E,
+            [AddressModes.Accumulator]: 0x0A,
+            [AddressModes.Zeropage]: 0x06,
+            [AddressModes.ZeropageX]: 0x16,
+            [AddressModes.Absolute]: 0x0E,
+            [AddressModes.AbsoluteX]: 0x1E,
         },
         BCC: {
-            relative: 0x90,
+            [AddressModes.Relative]: 0x90,
         },
         BCS: {
-            relative: 0xB0,
+            [AddressModes.Relative]: 0xB0,
         },
         BEQ: {
-            relative: 0xF0,
+            [AddressModes.Relative]: 0xF0,
         },
         BIT: {
-            zeropage: 0x24,
-            absolute: 0x2C,
+            [AddressModes.Zeropage]: 0x24,
+            [AddressModes.Absolute]: 0x2C,
         },
         BMI: {
-            relative: 0x30,
+            [AddressModes.Relative]: 0x30,
         },
         BNE: {
-            relative: 0xD0,
+            [AddressModes.Relative]: 0xD0,
         },
         BPL: {
-            relative: 0x10,
+            [AddressModes.Relative]: 0x10,
         },
         BRK: {
-            implied: 0x00,
+            [AddressModes.Implied]: 0x00,
         },
         BVC: {
-            relative: 0x50,
+            [AddressModes.Relative]: 0x50,
         },
         BVS: {
-            relative: 0x70,
+            [AddressModes.Relative]: 0x70,
         },
         CLC: {
-            implied: 0x18,
+            [AddressModes.Implied]: 0x18,
         },
         CLD: {
-            implied: 0xD8,
+            [AddressModes.Implied]: 0xD8,
         },
         CLI: {
-            implied: 0xB8,
+            [AddressModes.Implied]: 0xB8,
         },
         CMP: {
-            immediate: 0xC9,
-            zeropage: 0xC5,
-            zeropageX: 0xD5,
-            absolute: 0xCD,
-            absoluteX: 0xDD,
-            absoluteY: 0xD9,
-            indirectX: 0xC1,
-            indirectY: 0xD1,
+            [AddressModes.Immediate]: 0xC9,
+            [AddressModes.Zeropage]: 0xC5,
+            [AddressModes.ZeropageX]: 0xD5,
+            [AddressModes.Absolute]: 0xCD,
+            [AddressModes.AbsoluteX]: 0xDD,
+            [AddressModes.AbsoluteY]: 0xD9,
+            [AddressModes.IndirectX]: 0xC1,
+            [AddressModes.IndirectY]: 0xD1,
         },
         CPX: {
-            immediate: 0xE0,
-            zeropage: 0xE4,
-            absolute: 0xEC,
+            [AddressModes.Immediate]: 0xE0,
+            [AddressModes.Zeropage]: 0xE4,
+            [AddressModes.Absolute]: 0xEC,
         },
         CPY: {
-            immediate: 0xC0,
-            zeropage: 0xC4,
-            absolute: 0xCC,
+            [AddressModes.Immediate]: 0xC0,
+            [AddressModes.Zeropage]: 0xC4,
+            [AddressModes.Absolute]: 0xCC,
         },
         DEC: {
-            zeropage: 0xC6,
-            zeropageX: 0xD6,
-            absolute: 0xCE,
-            absoluteX: 0xDE,
+            [AddressModes.Zeropage]: 0xC6,
+            [AddressModes.ZeropageX]: 0xD6,
+            [AddressModes.Absolute]: 0xCE,
+            [AddressModes.AbsoluteX]: 0xDE,
         },
         DEX: {
-            implied: 0xCA,
+            [AddressModes.Implied]: 0xCA,
         },
         DEY: {
-            implied: 0x88,
+            [AddressModes.Implied]: 0x88,
         },
         EOR: {
-            immediate: 0x49,
-            zeropage: 0x45,
-            zeropageX: 0x55,
-            absolute: 0x4D,
-            absoluteX: 0x5D,
-            absoluteY: 0x59,
-            indirectX: 0x41,
-            indirectY: 0x51,
+            [AddressModes.Immediate]: 0x49,
+            [AddressModes.Zeropage]: 0x45,
+            [AddressModes.ZeropageX]: 0x55,
+            [AddressModes.Absolute]: 0x4D,
+            [AddressModes.AbsoluteX]: 0x5D,
+            [AddressModes.AbsoluteY]: 0x59,
+            [AddressModes.IndirectX]: 0x41,
+            [AddressModes.IndirectY]: 0x51,
         },
         INC: {
-            zeropage: 0xE6,
-            zeropageX: 0xF6,
-            absolute: 0xEE,
-            absoluteX: 0xFE,
+            [AddressModes.Zeropage]: 0xE6,
+            [AddressModes.ZeropageX]: 0xF6,
+            [AddressModes.Absolute]: 0xEE,
+            [AddressModes.AbsoluteX]: 0xFE,
         },
         INX: {
-            implied: 0xE8,
+            [AddressModes.Implied]: 0xE8,
         },
         INY: {
-            implied: 0xC8,
+            [AddressModes.Implied]: 0xC8,
         },
         JMP: {
-            absolute: 0x4C,
-            indirect: 0x6C,
+            [AddressModes.Absolute]: 0x4C,
+            [AddressModes.Indirect]: 0x6C,
         },
         JSR: {
-            absolute: 0x20,
+            [AddressModes.Absolute]: 0x20,
         },
         LDA: {
-            immediate: 0xA9,
-            zeropage: 0xA5,
-            zeropageX: 0xB5,
-            absolute: 0xAD,
-            absoluteX: 0xBD,
-            absoluteY: 0xB9,
-            indirectX: 0xA1,
-            indirectY: 0xB1,
+            [AddressModes.Immediate]: 0xA9,
+            [AddressModes.Zeropage]: 0xA5,
+            [AddressModes.ZeropageX]: 0xB5,
+            [AddressModes.Absolute]: 0xAD,
+            [AddressModes.AbsoluteX]: 0xBD,
+            [AddressModes.AbsoluteY]: 0xB9,
+            [AddressModes.IndirectX]: 0xA1,
+            [AddressModes.IndirectY]: 0xB1,
         },
         LDX: {
-            immediate: 0xA2,
-            zeropage: 0xA6,
-            zeropageY: 0xB6,
-            absolute: 0xAE,
-            absoluteY: 0xBE,
+            [AddressModes.Immediate]: 0xA2,
+            [AddressModes.Zeropage]: 0xA6,
+            [AddressModes.ZeropageY]: 0xB6,
+            [AddressModes.Absolute]: 0xAE,
+            [AddressModes.AbsoluteY]: 0xBE,
         },
         LDY: {
-            immediate: 0xA0,
-            zeropage: 0xA4,
-            zeropageX: 0xB4,
-            absolute: 0xAC,
-            absoluteX: 0xBC,
+            [AddressModes.Immediate]: 0xA0,
+            [AddressModes.Zeropage]: 0xA4,
+            [AddressModes.ZeropageX]: 0xB4,
+            [AddressModes.Absolute]: 0xAC,
+            [AddressModes.AbsoluteX]: 0xBC,
         },
         LOG: {
-            accumulator: 0xFF,
+            [AddressModes.Accumulator]: 0xFA,
         },
         LSR: {
-            accumulator: 0x4A,
-            zeropage: 0x46,
-            zeropageX: 0x56,
-            absolute: 0x4E,
-            absoluteX: 0x5E,
+            [AddressModes.Accumulator]: 0x4A,
+            [AddressModes.Zeropage]: 0x46,
+            [AddressModes.ZeropageX]: 0x56,
+            [AddressModes.Absolute]: 0x4E,
+            [AddressModes.AbsoluteX]: 0x5E,
         },
         NOP: {
-            implied: 0xEA,
+            [AddressModes.Implied]: 0xEA,
         },
         ORA: {
-            immediate: 0x09,
-            zeropage: 0x05,
-            zeropageX: 0x15,
-            absolute: 0x0D,
-            absoluteX: 0x1D,
-            absoluteY: 0x19,
-            indirectX: 0x01,
-            indirectY: 0x11,
+            [AddressModes.Immediate]: 0x09,
+            [AddressModes.Zeropage]: 0x05,
+            [AddressModes.ZeropageX]: 0x15,
+            [AddressModes.Absolute]: 0x0D,
+            [AddressModes.AbsoluteX]: 0x1D,
+            [AddressModes.AbsoluteY]: 0x19,
+            [AddressModes.IndirectX]: 0x01,
+            [AddressModes.IndirectY]: 0x11,
         },
         PHA: {
-            implied: 0x48,
+            [AddressModes.Implied]: 0x48,
         },
         PHP: {
-            implied: 0x08,
+            [AddressModes.Implied]: 0x08,
         },
         PLA: {
-            implied: 0x68,
+            [AddressModes.Implied]: 0x68,
         },
         PLP: {
-            implied: 0x28,
+            [AddressModes.Implied]: 0x28,
         },
         ROL: {
-            accumulator: 0x2A,
-            zeropage: 0x26,
-            zeropageX: 0x36,
-            absolute: 0x2E,
-            absoluteX: 0x3E,
+            [AddressModes.Accumulator]: 0x2A,
+            [AddressModes.Zeropage]: 0x26,
+            [AddressModes.ZeropageX]: 0x36,
+            [AddressModes.Absolute]: 0x2E,
+            [AddressModes.AbsoluteX]: 0x3E,
         },
         ROR: {
-            accumulator: 0x6A,
-            zeropage: 0x66,
-            zeropageX: 0x76,
-            absolute: 0x6E,
-            absoluteX: 0x7E,
+            [AddressModes.Accumulator]: 0x6A,
+            [AddressModes.Zeropage]: 0x66,
+            [AddressModes.ZeropageX]: 0x76,
+            [AddressModes.Absolute]: 0x6E,
+            [AddressModes.AbsoluteX]: 0x7E,
         },
         RTI: {
-            implied: 0x40,
+            [AddressModes.Implied]: 0x40,
         },
         RTS: {
-            implied: 0x60,
+            [AddressModes.Implied]: 0x60,
         },
         SBC: {
-            immediate: 0xE9,
-            zeropage: 0xE5,
-            zeropageX: 0xF5,
-            absolute: 0xED,
-            absoluteX: 0xFD,
-            absoluteY: 0xF9,
-            indirectX: 0xE1,
-            indirectY: 0xF1,
+            [AddressModes.Immediate]: 0xE9,
+            [AddressModes.Zeropage]: 0xE5,
+            [AddressModes.ZeropageX]: 0xF5,
+            [AddressModes.Absolute]: 0xED,
+            [AddressModes.AbsoluteX]: 0xFD,
+            [AddressModes.AbsoluteY]: 0xF9,
+            [AddressModes.IndirectX]: 0xE1,
+            [AddressModes.IndirectY]: 0xF1,
         },
         SEC: {
-            implied: 0x38,
+            [AddressModes.Implied]: 0x38,
         },
         SED: {
-            implied: 0xF8,
+            [AddressModes.Implied]: 0xF8,
         },
         SEI: {
-            implied: 0x78,
+            [AddressModes.Implied]: 0x78,
         },
         STA: {
-            zeropage: 0x85,
-            zeropageX: 0x95,
-            absolute: 0x8D,
-            absoluteX: 0x9D,
-            absoluteY: 0x99,
-            indirectX: 0x81,
-            indirectY: 0x91,
+            [AddressModes.Zeropage]: 0x85,
+            [AddressModes.ZeropageX]: 0x95,
+            [AddressModes.Absolute]: 0x8D,
+            [AddressModes.AbsoluteX]: 0x9D,
+            [AddressModes.AbsoluteY]: 0x99,
+            [AddressModes.IndirectX]: 0x81,
+            [AddressModes.IndirectY]: 0x91,
         },
         STX: {
-            zeropage: 0x86,
-            zeropageY: 0x96,
-            absolute: 0x8E,
+            [AddressModes.Zeropage]: 0x86,
+            [AddressModes.ZeropageY]: 0x96,
+            [AddressModes.Absolute]: 0x8E,
         },
         STY: {
-            zeropage: 0x84,
-            zeropageX: 0x94,
-            absolute: 0x8C,
+            [AddressModes.Zeropage]: 0x84,
+            [AddressModes.ZeropageX]: 0x94,
+            [AddressModes.Absolute]: 0x8C,
         },
         TAX: {
-            implied: 0xAA,
+            [AddressModes.Implied]: 0xAA,
         },
         TAY: {
-            implied: 0xA8,
+            [AddressModes.Implied]: 0xA8,
         },
         TSX: {
-            implied: 0xBA,
+            [AddressModes.Implied]: 0xBA,
         },
         TXA: {
-            implied: 0x8A,
+            [AddressModes.Implied]: 0x8A,
         },
         TXS: {
-            implied: 0x9A,
+            [AddressModes.Implied]: 0x9A,
         },
         TYA: {
-            implied: 0x98,
+            [AddressModes.Implied]: 0x98,
         }
     }
     static Instructions = Emu6502.InstructionOpcodes.Keys()
@@ -953,98 +1050,58 @@ export class Emu6502 {
         const allocs = code.filter(l => l[0] === 'alloc').map(alloc => alloc[1])
         let instructions = code.map(l => 
             l[0].startsWith('alloc') ? undefined :
-            l[0].startsWith('@') ? new Instruction(l[1], l[2], l[0].slice(1)) :
+            l[0].startsWith('@') ? new Instruction(l[1], l[2], l[0].slice(1).trim()) :
             l.length === 2 ? new Instruction(l[0], l[1]) :
+            l.length === 1 ? new Instruction(l[0], '') :
             undefined
-            ).RemoveUndefined()
+        ).RemoveUndefined()
         
+        // allocate required memory
         instructions.forEach(i => {
-            const pos = allocs.indexOf(i.opr)
-            if (pos !== -1) i.opr = `$${pos.toString(16)}`
+            const pos = allocs.indexOf(i.opr),
+                posS = pos.toString(16)
+            if (pos !== -1) i.opr = `$${posS.padStart(posS.length <= 2 ? 2 : 4, '0')}`
         })
 
+        // replace jmp identifiers
+        instructions.reduce((pos, instr) => {
+            if (instr.label)
+            instructions.filter(i => i.opr === instr.label).forEach(inst => {
+                inst.opr = `$${pos.toString(16)}`
+            })
+            return pos + instr.ByteLength
+        }, 0)
 
-        const identifiers = instructions.filter(i => i.label)
+        console.log('[')
+        instructions.forEach(i => console.log('|', i.String.padEnd(10), i.Value?.toString(16).padEnd(3) ?? '   ', i.Binary.map(n => n.toString(16))))
+        console.log(']')
 
-        identifiers.forEach((instr, i) => {
-            instr
-
-        })
-
-
-        console.log(instructions)
-
-        // this.LoadROMfromBasicAssembly(instructions)
-    }
-
-    private getInstructionLength(mode: AddressModes) {
-        switch (mode) {
-            case AddressModes.Absolute: return 3
-            case AddressModes.AbsoluteX: return 3
-            case AddressModes.AbsoluteY: return 3
-            case AddressModes.Accumulator: return 1
-            case AddressModes.Immediate: return 2
-            case AddressModes.Implied: return 1
-            case AddressModes.Indirect: return 3
-            case AddressModes.IndirectX: return 2
-            case AddressModes.IndirectY: return 2
-            case AddressModes.Relative: return 2
-            case AddressModes.Zeropage: return 2
-            case AddressModes.ZeropageX: return 2
-            case AddressModes.ZeropageY: return 2
-        }
+        this.LoadROMfromBasicAssembly(instructions)
     }
 
     LoadROMfromBasicAssembly(assembly: Instruction[]) {
-        this.ROM = new Uint8Array(assembly.flatMap((instr) => {
-            if (Emu6502.Instructions.includes(instr.opc)) {
-                const inst = Emu6502.InstructionOpcodes[instr.opc],
-                    hexDigits = instr.opr.match(/\$[0-9A-F]+/)?.at(0) ?? '',
-                    mode = instr.InstructionMode,
-                    opcode: number | undefined = (mode === AddressModes.Zeropage ? inst[AddressModes.Relative] : undefined) ?? inst[mode]
+        this.ROM = new Uint8Array(assembly.flatMap((instr) => 
+            Emu6502.Instructions.includes(instr.opc) ? instr.Binary : []
+        ))
 
-                if (opcode === undefined) throw new AssemblerError(`Could not understand line '${instr.tuple}'`)
-
-                if (hexDigits.length === 4) {
-                    return [opcode,
-                        hexDigits.slice(2).toInt(16), // LO
-                        hexDigits.slice(0, 2).toInt(16)] // HI
-                }
-                else if (hexDigits.length === 2) {
-                    return [opcode,
-                        hexDigits.slice(0, 2).toInt(16)] // LO
-                }
-                else return [opcode]
-            }
-        }) as number[])
-
-        this.ROM.forEach(short => short.toString(16).padStart(4, '0').Log())
+        // this.ROM.forEach(byte => byte.toString(16).padStart(2, '0').Log())
     }
-}
-
-enum AddressModes {
-    Accumulator,
-    Absolute,
-    AbsoluteX,
-    AbsoluteY,
-    Immediate,
-    Implied,
-    Indirect,
-    IndirectX,
-    IndirectY,
-    Relative,
-    Zeropage,
-    ZeropageX,
-    ZeropageY
 }
 
 class Instruction {
     constructor(public opc: string, public opr: string, public label?: string) {}
-    get tuple() { return [this.opc, this.opr] }
-    get InstructionMode(): AddressModes | undefined {
-        const hexDigits = this.opr.RegexTest(/\$[0-9A-F]+/) ? this.opr.slice(this.opr.indexOf('$') + 1) : '',
-            indexed = this.opr.includes('X') ? 'X' : this.opr.includes('Y') ? 'Y' : ''
+    get Tuple() { return [this.opc, this.opr] }
+    get String() { return `${this.opc} ${this.opr}` }
 
+    get Value() {
+        return this.opr.match(/\$[0-9A-F]+/)?.at(0)?.slice(1).toInt(16) ??
+            this.opr.match(/%[01]+/)?.at(0)?.slice(1).toInt(2) ??
+            this.opr.match(/[0-9]+/)?.at(0)?.toInt(10)
+    }
+
+    get InstructionMode() {
+        const value = this.Value,
+            indexed = this.opr.includes('X') ? 'X' : this.opr.includes('Y') ? 'Y' : ''
         if (!this.opr || this.opr === '') { // accumulator || implied; 1 byte
             return AddressModes.Implied
         } else if (this.opr === 'A') {
@@ -1053,12 +1110,51 @@ class Instruction {
             return indexed === '' ? AddressModes.Indirect : indexed === 'X' ? AddressModes.IndirectX : AddressModes.IndirectY
         } else if (this.opr.startsWith('#')) { //immidiate; 2 bytes
             return AddressModes.Immediate
-        } else if (hexDigits.length === 4) { //absolute; 3 bytes
+        } else if (value && value > 255) { //absolute; 3 bytes
             return indexed === '' ? AddressModes.Absolute : indexed === 'X' ? AddressModes.AbsoluteX : AddressModes.AbsoluteY
-        } else if (hexDigits.length === 2) { // relative || zeropage; 2 bytes
+        } else { // relative || zeropage; 2 bytes
             return indexed === 'X' ? AddressModes.ZeropageX : indexed === 'Y' ? AddressModes.ZeropageY : AddressModes.Zeropage // or relative
         }
-        return undefined
+    }
+
+    static readonly AddressModeByteLengths: {[key:number]: number} = {
+        [AddressModes.Accumulator]: 1,
+        [AddressModes.Absolute]: 3,
+        [AddressModes.AbsoluteX]: 3,
+        [AddressModes.AbsoluteY]: 3,
+        [AddressModes.Immediate]: 2,
+        [AddressModes.Implied]: 1,
+        [AddressModes.Indirect]: 3,
+        [AddressModes.IndirectX]: 2,
+        [AddressModes.IndirectY]: 3,
+        [AddressModes.Relative]: 2,
+        [AddressModes.Zeropage]: 2,
+        [AddressModes.ZeropageX]: 2,
+        [AddressModes.ZeropageY]: 2,
+    }
+
+    get ByteLength() {
+        return Instruction.AddressModeByteLengths[this.InstructionMode]
+    }
+
+    get Binary() {
+        const inst = Emu6502.InstructionOpcodes[this.opc],
+            value = this.Value,
+            mode = this.InstructionMode
+
+        if (mode === undefined) throw new AssemblerError(`Could not understand line '${this.String}'. Could not understand the instruction mode.`)
+
+        const opcode = (mode === AddressModes.Zeropage ? inst[AddressModes.Relative] : undefined) ?? inst[mode]
+
+        if (opcode === undefined) throw new AssemblerError(`Could not understand line '${this.String}'. The instruction mode does not appear to be in the opcode.`)
+
+        if (value !== undefined && value > 255) { // 3 byte instruction
+            return [opcode, value & 0xF /** LO */, value >> 8 & 0xF /** HI */]
+        }
+        else if (value !== undefined && value <= 255) { // 2 byte instruction
+            return [opcode, value & 0xF /** LO */]
+        }
+        else return [opcode] // 1 byte instruction
     }
 }
 
@@ -1078,46 +1174,40 @@ interface InstructionSignature {
     [AddressModes.ZeropageY]?: number
 }
 
-const AddressModeLengths = {
-    [AddressModes.Accumulator]: 1,
-    [AddressModes.Absolute]: 3,
-    [AddressModes.AbsoluteX]: 3,
-    [AddressModes.AbsoluteY]: 3,
-    [AddressModes.Immediate]: 2,
-    [AddressModes.Implied]: 1,
-    [AddressModes.Indirect]: 3,
-    [AddressModes.IndirectX]: 2,
-    [AddressModes.IndirectY]: 3,
-    [AddressModes.Relative]: 2,
-    [AddressModes.Zeropage]: 2,
-    [AddressModes.ZeropageX]: 2,
-    [AddressModes.ZeropageY]: 2,
-}
 
-// const e = new Emu6502
+
+const e = new Emu6502
+e.LoadROMfromAssembly(`
+alloc x
+alloc y
+alloc z
+
+LDA #0
+STA x
+LDA #1
+STA y
+
+@fib LDA x
+LOG A
+ADC y
+STA z
+LDA y
+STA x
+LDA z
+STA y
+
+LDA x
+CMP #$FF
+BMI fib
+
+
+`.SplitLines())
+
 // e.LoadROMfromAssembly(`
-// alloc x
-// alloc y
-// alloc z
-
-// LDA #$0
-// STA x
-// LDA #$1
-// STA y
-
-// LDA x
-// LOG
-// ADC y
-// STA z
-// LDA y
-// STA x
-// LDA z
-// STA y
-
-// LDA x
-// CMP #255
-
-
+// LDA #1
+// STA 1
 // `.SplitLines())
 
-// e.Execute()
+// e.Debug = true
+
+e.Execute()
