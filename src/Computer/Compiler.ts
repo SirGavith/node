@@ -174,7 +174,7 @@ export function CompilerMU1(exp: Expression): string[/** assembly */] {
             switch (exp.Operator) {
                 case Operators.And: {
                     //Logical
-                    return
+                    // return
                 }
                 case Operators.Decrement: {
                     if (!exp.Operand) throw new CompilerError('Decrement expression', exp, 'requires an operand')
@@ -188,10 +188,10 @@ export function CompilerMU1(exp: Expression): string[/** assembly */] {
                     throw new CompilerError('Division expressions are not currently implemented')
                 }
                 case Operators.GreaterThan: {
-                    return
+                    // return
                 }
                 case Operators.GreaterThanEQ: {
-                    return
+                    // return
                 }
                 case Operators.Increment: {
                     if (!exp.Operand || exp.Operand.Type !== ExpressionTypes.Variable) throw new CompilerError('Increment expression', exp, 'requires a variable operand')
@@ -199,16 +199,16 @@ export function CompilerMU1(exp: Expression): string[/** assembly */] {
                             `LDL 0x1`, `ADC ${rightTemp}`].flat()
                 }
                 case Operators.IsEqual: {
-                    return
+                    // return
                 }
                 case Operators.IsNotEqual: {
-                    return
+                    // return
                 }
                 case Operators.LessThan: {
-                    return
+                    // return
                 }
                 case Operators.LessThanEQ: {
-                    return
+                    // return
                 }
                 case Operators.Minus: {
                     if (!exp.Operand || !exp.Operand2) throw new CompilerError('Subtraction expression', exp, 'requires two operands')

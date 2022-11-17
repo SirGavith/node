@@ -1,11 +1,11 @@
-import { BigMap } from '../Glib/built/BigMap'
-import { LinkedList, LinkedNode } from '../Glib/built/LinkedList'
-import { Stack } from '../Glib/built/Stack'
-import { Array2D as Array2D, XY } from '../Glib/built/XY'
-import { Array3D, XYZ } from '../Glib/built/XYZ'
-import { Filer } from '../Glib/built/Filer'
-import { Sorts } from '../Glib/built/Sort'
-import { Range } from './main'
+import { BigMap } from './Glib/BigMap'
+import { LinkedList, LinkedNode } from './Glib/LinkedList'
+import { Stack } from './Glib/Stack'
+import { Array2D as Array2D, XY } from './Glib/XY'
+import { Array3D, XYZ } from './Glib/XYZ'
+import { Filer } from './Glib/Filer'
+import { Sorts } from './Glib/Sort'
+import { Range } from './Glib/Array'
 
 const UseExample = true,
     Data = Filer.ReadAllLines(UseExample ? '../example.txt' : '../input.txt'),

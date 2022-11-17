@@ -10,6 +10,7 @@ interface Number {
     Ceil(): number
     Log(): number
 }
+type numericals = number | bigint
 Number.prototype.IsInteger = function() {
     return this.valueOf() % 1 == 0
 }

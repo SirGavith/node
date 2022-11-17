@@ -1,4 +1,4 @@
-import { Files, Range, Sorts } from "./main"
+import { Filer } from "./Glib/Filer"
 
 function clearLastLine() {
     process.stdout.moveCursor(0, -1) // up one line
@@ -10,7 +10,7 @@ class WordleGame {
     Guesses: string[] = []
 
     constructor() {
-        this.Word = Files.ReadAllLines('../possibleWords.txt').filter(w => w.length === 5).Random()
+        this.Word = Filer.ReadAllLines('../possibleWords.txt').filter(w => w.length === 5).Random()
     }
 
     Guess(guess: string, log = true): boolean {
@@ -57,13 +57,7 @@ class WordleGame {
 const w = new WordleGame
 
 
-
-
-
 //make a guess
-
-
-
 
 
 const prompt = require('prompt-sync')({sigint: true});
