@@ -1,6 +1,6 @@
 import { isNullOrUndefined } from "util";
 import { AssemblerError } from "./Compiler";
-import { CustomError } from "./lib/Error"
+import { CustomError } from "../Glib/Error"
 
 class RuntimeError extends CustomError { constructor(...message: any[]) { super(message); this.name = this.constructor.name} }
 
@@ -423,27 +423,22 @@ export class Emu6502 {
 
             this.LogStatus()
 
-            console.table({
-                [this.PC.toString()]: {
-                    opc: opcode,
-                    'Predicted instruction': (instString + ' ' + (
-                        addressMode === AddressModes.Absolute ? `$${num}` :
-                        addressMode === AddressModes.AbsoluteX ? `$${num},X` :
-                        addressMode === AddressModes.AbsoluteY ? `$${num},Y` :
-                        addressMode === AddressModes.Accumulator ? `A` :
-                        addressMode === AddressModes.Immediate ? `#$${num}` :
-                        addressMode === AddressModes.Implied ? `` :
-                        addressMode === AddressModes.Indirect ? `($${num})` :
-                        addressMode === AddressModes.IndirectX ? `($${num},X)` :
-                        addressMode === AddressModes.IndirectY ? `($${num}),Y` :
-                        addressMode === AddressModes.Relative ? `$${num}` :
-                        addressMode === AddressModes.Zeropage ? `$${num}` :
-                        addressMode === AddressModes.ZeropageX ? `$${num},X` :
-                        addressMode === AddressModes.ZeropageY ? `$${num},Y` :
-                        undefined
-                    )).trim()
-                }
-            })
+            console.log(`Executing... | ${opcode} | ${(instString + ' ' + (
+                addressMode === AddressModes.Absolute ? `$${num}` :
+                addressMode === AddressModes.AbsoluteX ? `$${num},X` :
+                addressMode === AddressModes.AbsoluteY ? `$${num},Y` :
+                addressMode === AddressModes.Accumulator ? `A` :
+                addressMode === AddressModes.Immediate ? `#$${num}` :
+                addressMode === AddressModes.Implied ? `` :
+                addressMode === AddressModes.Indirect ? `($${num})` :
+                addressMode === AddressModes.IndirectX ? `($${num},X)` :
+                addressMode === AddressModes.IndirectY ? `($${num}),Y` :
+                addressMode === AddressModes.Relative ? `$${num}` :
+                addressMode === AddressModes.Zeropage ? `$${num}` :
+                addressMode === AddressModes.ZeropageX ? `$${num},X` :
+                addressMode === AddressModes.ZeropageY ? `$${num},Y` :
+                undefined
+            )).trim()}`)
         }
 
         instr()
@@ -1065,15 +1060,20 @@ export class Emu6502 {
 
         // replace jmp identifiers
         instructions.reduce((pos, instr) => {
-            if (instr.label)
-            instructions.filter(i => i.opr === instr.label).forEach(inst => {
-                inst.opr = `$${pos.toString(16)}`
-            })
+            if (instr.label) // this part is wrong
+                instructions.filter(i => i.opr === instr.label).forEach(inst => {
+                    inst.opr = `$${pos.toString(16)}`
+                })
             return pos + instr.ByteLength
         }, 0)
 
         console.log('[')
-        instructions.forEach(i => console.log('|', i.String.padEnd(10), i.Value?.toString(16).padEnd(3) ?? '   ', i.Binary.map(n => n.toString(16))))
+        instructions.forEach(i => 
+            console.log(
+                '|',
+                i.String.padEnd(10),
+                i.Value?.toString(16).padEnd(3) ?? '   ',
+                i.Binary.map(n => n.toString(16))))
         console.log(']')
 
         this.LoadROMfromBasicAssembly(instructions)
@@ -1141,6 +1141,7 @@ class Instruction {
         const inst = Emu6502.InstructionOpcodes[this.opc],
             value = this.Value,
             mode = this.InstructionMode
+        if (inst === undefined) throw new AssemblerError(`Could not understand line '${this.String}'. '${this.opc}' is not a valid opcode.`)
 
         if (mode === undefined) throw new AssemblerError(`Could not understand line '${this.String}'. Could not understand the instruction mode.`)
 
@@ -1149,10 +1150,10 @@ class Instruction {
         if (opcode === undefined) throw new AssemblerError(`Could not understand line '${this.String}'. The instruction mode does not appear to be in the opcode.`)
 
         if (value !== undefined && value > 255) { // 3 byte instruction
-            return [opcode, value & 0xF /** LO */, value >> 8 & 0xF /** HI */]
+            return [opcode, value & 0xFF /** LO */, value >> 8 & 0xFF /** HI */]
         }
         else if (value !== undefined && value <= 255) { // 2 byte instruction
-            return [opcode, value & 0xF /** LO */]
+            return [opcode, value & 0xFF /** LO */]
         }
         else return [opcode] // 1 byte instruction
     }
@@ -1176,38 +1177,39 @@ interface InstructionSignature {
 
 
 
-const e = new Emu6502
-e.LoadROMfromAssembly(`
-alloc x
-alloc y
-alloc z
-
-LDA #0
-STA x
-LDA #1
-STA y
-
-@fib LDA x
-LOG A
-ADC y
-STA z
-LDA y
-STA x
-LDA z
-STA y
-
-LDA x
-CMP #$FF
-BMI fib
-
-
-`.SplitLines())
-
+// const e = new Emu6502
 // e.LoadROMfromAssembly(`
+// alloc x
+// alloc y
+// alloc z
+
+// LDA #0
+// STA x
 // LDA #1
-// STA 1
+// STA y
+
+// @fib LDA x
+// LOG A
+// ADC y
+// STA z
+// LDA y
+// STA x
+// LDA z
+// STA y
+
+// LDA x
+// CMP #$FF
+// BMI fib
+
+
 // `.SplitLines())
+
+// //BMI is relative only
+
+// // e.LoadROMfromAssembly(`
+// // CMP #$FF
+// // `.SplitLines())
 
 // e.Debug = true
 
-e.Execute()
+// e.Execute()

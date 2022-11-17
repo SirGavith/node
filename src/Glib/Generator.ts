@@ -1,5 +1,3 @@
-require('../main.js')
-
 interface Generator<T, TReturn, TNext> {
     Map<U>(mapper: (value: T) => U): Generator<U>
     // Reduce<TT>(action: (accululator: TT, i: T) => any, startingValue?: TT): Generator

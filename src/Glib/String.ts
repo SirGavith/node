@@ -1,6 +1,8 @@
 interface String {
-    toIntList(radix?: number): number[]
+    toIntList(radix?: number, delim?: string): number[]
+    toFloatList(delim?: string): number[]
     toInt(radix?: number): number
+    toFloat(radix?: number): number
     toArray(includeNewlines?: boolean): string[]
     in(str: string): boolean
     SplitLines(): string[]
@@ -14,11 +16,17 @@ interface String {
 String.prototype.forEach = function(lambda: (val: string, index: number) => void) {
     this.toArray().forEach((v, i) => lambda(v, i))
 }
-String.prototype.toIntList = function(radix?: number) {
-    return this.split('\n').map(n => parseInt(n, radix))
+String.prototype.toIntList = function(radix?: number, delim = '\n') {
+    return this.split(delim).map(n => parseInt(n, radix))
+}
+String.prototype.toFloatList = function(delim = '\n') {
+    return this.split(delim).map(n => parseFloat(n))
 }
 String.prototype.toInt = function(radix?: number) {
     return parseInt(this.valueOf(), radix)
+}
+String.prototype.toFloat = function() {
+    return parseFloat(this.valueOf())
 }
 String.prototype.toArray = function(includeNewlines = true) {
     if (!includeNewlines) {

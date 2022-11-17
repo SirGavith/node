@@ -15,7 +15,7 @@ interface Array<T> {
     FillEmpty(value: T, pad?: number): Array<T>
     Count(predicate?: (value: T, index: number, array: T[]) => boolean): number
     IncrementOrCreate (index: number, value?: number): void
-    BinarySearch(search: (value: T, index: number) => boolean): T
+    // BinarySearch(search: (value: T, index: number) => boolean): T
     Permutations(): T[][]
     Frequency(val: T): number
     Frequencies(sort?: boolean): [T, number][]
@@ -29,10 +29,12 @@ interface Array<T> {
     Min(): T
     Log(): Array<T>
 
+    IncrementOrCreate2D(val1: number, val2: number): void
+    toObject(): {}
+
     //String
     toIntArray(radix?: number): number[]
 }
-
 Array.prototype.Copy = function() {
     let a: any[] = []
     this.forEach((val, i) => {
@@ -57,7 +59,7 @@ Array.prototype.forEachPair = function(action: (value: any[], index: number[]) =
     })
 }
 Array.prototype.Random = function() {
-    return this[Math.floor((Math.random()*this.length))];
+    return this[Math.floor((Math.random() * this.length))];
 }
 Array.prototype.forEachGroup = function(groupSize: number, action: (value: any[], index: number[]) => void, allowDuplicates = true, allowDoubles = true) {
     const pairs: string[] = []
@@ -109,15 +111,13 @@ Array.prototype.ReduceFilter = function(filter: (value: any, index: number, arra
     //loops until the list has one element, which it returns; 
     // in each iteration, it filters the list by the filter
     let arr = this.Copy()
-    let i = 0
     while (true) {
         arr = arr.filter(filter)
         if (arr.length === 1) return arr[0]
-        i++
     }
 }
-Array.prototype.FillEmpty = function<T>(fillValue: T, pad?: number) {
-    const arr: Array<T> = [],
+Array.prototype.FillEmpty = function(fillValue: any, pad?: number) {
+    const arr = [],
         len = pad ?? this.length
     for (let i = 0; i < len; i++) {
         arr[i] = this[i] ?? fillValue
@@ -131,16 +131,16 @@ Array.prototype.IncrementOrCreate = function(index: number, value = 1) {
     if (this[index]) this[index] += value
     else this[index] = value
 }
-Array.prototype.BinarySearch = function<T>(search: (value: T, index: number) => boolean) {
-    let index = this.length / 2,
-        prevVal
-    for (let i = this.length; true; i++) {
-        if (search(this[index], index))
-            index += index / 2
-        else index /= 2
-        prevVal = index
-    }
-}
+// Array.prototype.BinarySearch = function<T>(search: (value: T, index: number) => boolean) {
+//     let index = this.length / 2,
+//         prevVal
+//     for (let i = this.length; true; i++) {
+//         if (search(this[index], index))
+//             index += index / 2
+//         else index /= 2
+//         prevVal = index
+//     }
+// }
 
 Array.prototype.Permutations = function<T>() {
     let result: T[][] = [];
@@ -186,7 +186,7 @@ Array.prototype.WithIndices = function<T>() {
     return (this as T[]).map((v, i) => [v, i] as [T, number])
 }
 Array.prototype.Indices = function() {
-    return this.map((v, i) => i)
+    return this.map((_, i) => i)
 }
 Array.prototype.Median = function() {
     const arr = this.sort((a, b) => a - b),
@@ -222,14 +222,8 @@ Array.prototype.Product = function() {
     return this.reduce((p, c) => p * c)
 }
 Array.prototype.toInt = function(radix = 10) {
-    return this.join('').toInt()
+    return this.join('').toInt(radix)
 }
-
-interface Array<T> {//<T extends Array> {
-    IncrementOrCreate2D(val1: number, val2: number): void
-    toObject(): {}
-}
-
 Array.prototype.IncrementOrCreate2D = function(val1: number, val2: number) {
     if (this[val1]) {
         if (this[val1][val2]) this[val1][val2]++
@@ -242,4 +236,9 @@ Array.prototype.IncrementOrCreate2D = function(val1: number, val2: number) {
 }
 Array.prototype.toObject = function() {
     return Object.fromEntries(this)
+}
+
+export function Range(start: number, stop: number) {
+    const x = [start, stop].sort((a, b) => a - b)
+    return Array.from({ length: x[1] - x[0] + 1 }, (_, i) => x[0] + i)
 }

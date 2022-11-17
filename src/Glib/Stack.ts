@@ -1,3 +1,13 @@
+
+const CopyArr = function (t) {
+    let a: any[] = []
+    t.forEach((val, i) => {
+        a[i] = val
+    })
+    a.length = t.length
+    return a
+}
+
 export class Stack<T> {
     private array: T[]
 
@@ -23,8 +33,8 @@ export class Stack<T> {
         this.array = []
     }
 
-    get Array() {
-        return this.array.Copy()
+    get Array() : T[] {
+        return CopyArr(this.array)
     }
 
     toString() {

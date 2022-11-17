@@ -25,7 +25,7 @@ Object.prototype.Copy = function() {
     return this.Entries().toObject()
 }
 Object.prototype.RemoveUndefinedVals = function() {
-    return this.filter((key, val) => val != undefined)
+    return this.filter((_, val) => val != undefined)
 }
 Object.prototype.IncrementOrCreate = function(key: string, value: number | bigint = 1) {
     const t = typeof value === 'number' ? (this as FreqDict) : this as BigFreqDict

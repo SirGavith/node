@@ -1,13 +1,15 @@
-import { BigMap } from './lib/BigMap'
-import { LinkedList, LinkedNode } from './lib/LinkedList'
-import { Stack } from './lib/Stack'
-import { Array2D as Array2D, XY } from './lib/XY'
-import { Array3D, XYZ } from './lib/XYZ'
-import { Sorts, Files, Range } from './main'
+import { BigMap } from '../Glib/built/BigMap'
+import { LinkedList, LinkedNode } from '../Glib/built/LinkedList'
+import { Stack } from '../Glib/built/Stack'
+import { Array2D as Array2D, XY } from '../Glib/built/XY'
+import { Array3D, XYZ } from '../Glib/built/XYZ'
+import { Filer } from '../Glib/built/Filer'
+import { Sorts } from '../Glib/built/Sort'
+import { Range } from './main'
 
 const UseExample = true,
-    Data = Files.ReadAllLines(UseExample ? '../example.txt' : '../input.txt'),
-    DataFull = Files.ReadFile(UseExample ? '../example.txt' : '../input.txt')
+    Data = Filer.ReadAllLines(UseExample ? '../example.txt' : '../input.txt'),
+    DataFull = Filer.ReadFile(UseExample ? '../example.txt' : '../input.txt')
 
 class Advent2021 {
     static Day1() {

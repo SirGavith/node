@@ -1,7 +1,6 @@
-import { execPath } from 'process';
-import { Word, instructionsMU0 } from './Emulator'
+import { Word, instructionsMU0, Emu6502 } from './Emulator'
 import { Expression, ExpressionTypes, Lexer, OperationExpression, Operators, VariableExpression } from './Lexer';
-import { CustomError } from './lib/Error';
+import { CustomError } from '../Glib/Error';
 
 export class CompilerError extends CustomError { constructor(...message: any[]) { super(message); this.name = this.constructor.name} }
 export class AssemblerError extends CustomError { constructor(...message: any[]) { super(message); this.name = this.constructor.name} }
@@ -96,7 +95,6 @@ let: v2 = 1
     @start var1 -= var2
 }
 
-
 let:a=4,b=1
 if(a>b){a++;}else{a--;}
 b+=a
@@ -167,7 +165,7 @@ export function CompilerMU1(exp: Expression): string[/** assembly */] {
         }
         case ExpressionTypes.Literal: {
             if (! exp.Value) throw new CompilerError('Literal expression', exp, 'requires a value')
-            return [`LDL ${exp.Value}`]
+            return [`LDA #${exp.Value}`]
         }
         case ExpressionTypes.Operation: {
             // Leave result in A reg
@@ -181,7 +179,7 @@ export function CompilerMU1(exp: Expression): string[/** assembly */] {
                 case Operators.Decrement: {
                     if (!exp.Operand) throw new CompilerError('Decrement expression', exp, 'requires an operand')
                     return [CompilerMU1(exp.Operand), `alloc ${rightTemp}`, `STA ${rightTemp}`,
-                            `LDL 0x1`, `SUB ${rightTemp}`].flat()
+                            `LDA 0x1`, `SUB ${rightTemp}`].flat()
                 }
                 case Operators.Div: {
                     throw new CompilerError('Division expressions are not currently implemented')
@@ -196,9 +194,9 @@ export function CompilerMU1(exp: Expression): string[/** assembly */] {
                     return
                 }
                 case Operators.Increment: {
-                    if (!exp.Operand) throw new CompilerError('Increment expression', exp, 'requires an operand')
+                    if (!exp.Operand || exp.Operand.Type !== ExpressionTypes.Variable) throw new CompilerError('Increment expression', exp, 'requires a variable operand')
                     return [CompilerMU1(exp.Operand), `alloc ${rightTemp}`, `STA ${rightTemp}`,
-                            `LDL 0x1`, `ADD ${rightTemp}`].flat()
+                            `LDL 0x1`, `ADC ${rightTemp}`].flat()
                 }
                 case Operators.IsEqual: {
                     return
@@ -222,7 +220,7 @@ export function CompilerMU1(exp: Expression): string[/** assembly */] {
                     if (exp.Operand?.Type !== ExpressionTypes.Variable || !exp.Operand.Identifier) throw new CompilerError('Subtraction expression', exp, 'requires the operand two be a variable')
 
                     return [CompilerMU1(exp.Operand2), `alloc ${rightTemp}`, `STA ${rightTemp}`,
-                            CompilerMU1(exp.Operand), `SUB ${rightTemp}`, `STA ${exp.Operand.Identifier}`].flat()
+                            CompilerMU1(exp.Operand), `SBC ${rightTemp}`, `STA ${exp.Operand.Identifier}`].flat()
                 }
                 case Operators.Mod: {
                     throw new CompilerError('Mod expressions are not currently implemented')
@@ -241,13 +239,13 @@ export function CompilerMU1(exp: Expression): string[/** assembly */] {
                 case Operators.Plus: {
                     if (!exp.Operand || !exp.Operand2) throw new CompilerError('Addition expression', exp, 'requires two operands')
                     return [CompilerMU1(exp.Operand2), `alloc ${rightTemp}`, `STA ${rightTemp}`,
-                            CompilerMU1(exp.Operand), `ADD ${rightTemp}`].flat()
+                            CompilerMU1(exp.Operand), `ADC ${rightTemp}`].flat()
                 }
                 case Operators.PlusEQ: {
                     if (!exp.Operand || !exp.Operand2) throw new CompilerError('Addition expression', exp, 'requires two operands')
                     if (exp.Operand?.Type !== ExpressionTypes.Variable || !exp.Operand.Identifier) throw new CompilerError('Addition expression', exp, 'requires the operand two be a variable')
 
-                    return [CompilerMU1(exp.Operand2), `ADD ${exp.Operand.Identifier}`, `STA ${exp.Operand.Identifier}`].flat()
+                    return [CompilerMU1(exp.Operand2), `ADC ${exp.Operand.Identifier}`, `STA ${exp.Operand.Identifier}`].flat()
                 }
                 case Operators.SetEquals: {
                     if (!exp.Operand || !exp.Operand2) throw new CompilerError('Set Equals expression', exp, 'requires two operands')
@@ -308,7 +306,14 @@ export function CompilerMU1(exp: Expression): string[/** assembly */] {
 // let: x;
 // (x + 2) * (3-5)`)
 
-// const c = Lexer(`let:a=5;a+3;`)
-// c.Log()
+const c = Lexer(`let:a=5;a++;`)
+c.Log()
 
-// CompilerMU1(c).Log()
+
+
+const e = new Emu6502
+e.LoadROMfromAssembly(CompilerMU1(c).Log())
+
+e.Debug = true
+
+e.Execute()
