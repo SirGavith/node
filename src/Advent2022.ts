@@ -1,3 +1,4 @@
+const UseExample = false
 import { BigMap } from './Glib/BigMap'
 import { LinkedList, LinkedNode } from './Glib/LinkedList'
 import { Stack } from './Glib/Stack'
@@ -7,10 +8,10 @@ import { Filer } from './Glib/Filer'
 import { Sorts } from './Glib/Sort'
 import { Range } from './Glib/Array'
 
-const UseExample = true,
-    Data = Filer.ReadAllLines(UseExample ? '../example.txt' : '../input.txt'),
-    DataFull = Filer.ReadFile(UseExample ? '../example.txt' : '../input.txt')
+const Data = Filer.ReadAllLines(UseExample ? '../../data/example.txt' : '../../data/input.txt'),
+    DataFull = Filer.ReadFile(UseExample ? '../../data/example.txt' : '../../data/input.txt')
 
-class Advent2022 {
-
+export function Day1() {
+    Data.reduce((count, d, i, l) => count + ((d > l[i-1]) ? 1 : 0), 0).Log()
+    Data.map((v, i, a) => v > (a[i - 1] ?? Number.MAX_VALUE)).Count().Log()
 }

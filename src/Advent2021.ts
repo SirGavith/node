@@ -7,11 +7,11 @@ import { Filer } from './Glib/Filer'
 import { Sorts } from './Glib/Sort'
 import { Range } from './Glib/Array'
 
-const UseExample = true,
-    Data = Filer.ReadAllLines(UseExample ? '../example.txt' : '../input.txt'),
-    DataFull = Filer.ReadFile(UseExample ? '../example.txt' : '../input.txt')
+const UseExample = true
+const Data = Filer.ReadAllLines(UseExample ? '../../data/example.txt' : '../../data/input.txt'),
+    DataFull = Filer.ReadFile(UseExample ? '../../data/example.txt' : '../../data/input.txt')
 
-class Advent2021 {
+export class Advent2021 {
     static Day1() {
         Data.toIntArray()
             .reduce((p, _, i, a) => {
@@ -416,8 +416,8 @@ class Advent2021 {
                 freqs.IncrementOrCreate(e+a[i+1])
         })
 
-        const time = process.hrtime(startTime)
-        console.log(`half in ${time[0]}s ${time[1]/1_000_000}ms`)
+        // const time = process.hrtime(startTime)
+        // console.log(`half in ${time[0]}s ${time[1]/1_000_000}ms`)
 
         for (let i = 0; i < 40; i++) {
             const newFreqs = emptyFreqs.toObject() as {[key: string]: number}
@@ -431,8 +431,8 @@ class Advent2021 {
             freqs = newFreqs
         }
 
-        const time2 = process.hrtime(startTime)
-        console.log(`looped in ${time2[0]}s ${time2[1]/1_000_000}ms`)
+        // const time2 = process.hrtime(startTime)
+        // console.log(`looped in ${time2[0]}s ${time2[1]/1_000_000}ms`)
 
         const f = letterfreqs.Values();
         (f.Max() - f.Min()).Log()
@@ -1717,7 +1717,3 @@ class Advent2021 {
         
     }
 }
-const startTime = process.hrtime()
-Advent2021.Day25()
-const time = process.hrtime(startTime)
-console.log(`Ran in ${time[0]}s ${time[1]/1_000_000}ms`)
