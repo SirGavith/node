@@ -2,7 +2,6 @@ interface Array<T> {
     /** returns a shallow copy of an array */
     Copy(): T[]
     set(index: number, value: T): void
-    ReduceSum(lambda: (val: T, index: number) => number): number
     forEachPair(action: (value: T[], index: number[]) => void, allowDuplicates?: boolean, allowDoubles?: boolean): void
     forEachGroup(groupSize: number, action: (value: T[], index: number[]) => void, allowDuplicates?: boolean, allowDoubles?: boolean): void
     Uniques(): T[]
@@ -12,6 +11,7 @@ interface Array<T> {
     /** loops until the list has one element, which it returns. 
      in each iteration, it filters the list by the filter */
     ReduceFilter(filter: (value: T, index: number, array: T[]) => boolean): T
+    ReduceAccumulate(lambda: (prev: T, val: T, index: number, a: T[]) => number): number
     FillEmpty(value: T, pad?: number): Array<T>
     Count(predicate?: (value: T, index: number, array: T[]) => boolean): number
     IncrementOrCreate(index: number, value?: number): void
