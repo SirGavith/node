@@ -7,11 +7,16 @@ import { Array3D, XYZ } from './Glib/XYZ'
 import { Filer } from './Glib/Filer'
 import { Sorts } from './Glib/Sort'
 import { Range } from './Glib/Array'
+import * as GArray from './Glib/Array'
 
 const Data = Filer.ReadAllLines(UseExample ? '../../data/example.txt' : '../../data/input.txt'),
     DataFull = Filer.ReadFile(UseExample ? '../../data/example.txt' : '../../data/input.txt')
 
 export function Day1() {
-    Data.reduce((count, d, i, l) => count + ((d > l[i-1]) ? 1 : 0), 0).Log()
-    Data.map((v, i, a) => v > (a[i - 1] ?? Number.MAX_VALUE)).Count().Log()
+
+    GArray.Convolute(Data.toIntArray(), [1/3,1/3,1/3]).map(v => Math.round(3 * v)).Log()
+        .reduce(([acc, prev], v) => [acc + (v > prev ? 1 : 0), v] as [number, number], [0, Number.MAX_VALUE])[0].Log()
+
+    Data.toIntArray().ReduceFilter
+
 }

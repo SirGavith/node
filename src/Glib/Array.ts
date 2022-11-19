@@ -1,3 +1,5 @@
+import { Array2D, XY } from "./XY"
+
 interface Array<T> {
     /** returns a shallow copy of an array */
     Copy(): T[]
@@ -241,4 +243,14 @@ Array.prototype.toObject = function() {
 export function Range(start: number, stop: number) {
     const x = [start, stop].sort((a, b) => a - b)
     return Array.from({ length: x[1] - x[0] + 1 }, (_, i) => x[0] + i)
+}
+
+export function Convolute(l1: number[], l2: number[], truncate = true): number[] {
+    //naive; n^^2
+    const xy = new XY(l1.length, l2.length)
+    const out: number[] = []
+    new Array2D<number>(new XY(l1.length, l2.length))
+        .map((_, xy) => l1[xy.X] * l2[xy.Y])
+        .forEach((v, xy) => out.IncrementOrCreate(xy.TaxicabNorm, v))
+    return truncate ? out.slice(xy.Least - 1, out.length - xy.Least + 1) : out
 }

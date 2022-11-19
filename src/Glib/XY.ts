@@ -74,6 +74,8 @@ export class XY {
     get Greatest() { return this.X < this.Y ? this.Y : this.X }
     get LeastAbs() { return Math.abs(this.X) > Math.abs(this.Y) ? this.Y : this.X }
     get GreatestAbs() { return Math.abs(this.X) < Math.abs(this.Y) ? this.Y : this.X }
+    get Norm() { return Math.sqrt(this.X ** 2 + this.Y ** 2)}
+    get TaxicabNorm() { return Math.abs(this.X) + Math.abs(this.Y)}
 
     toArray() { return [this.X, this.Y] }
     toString() { return `${this.X}, ${this.Y}` }
@@ -237,8 +239,8 @@ export class Array2D<T> {
 
         console.log('[')
         this.Array.forEach(row => {
-            // console.log('| '+row.map(v => (v === undefined ? '' : typeof v === "number" && v === Infinity ? '∞' : String(v)).padStart(3)).join())
-            console.log('| '+row.map(v => v ?? '.').join(''))
+            console.log('| '+row.map(v => (v === undefined ? '' : typeof v === "number" && v === Infinity ? '∞' : String(v)).padStart(3)).join())
+            // console.log('| '+row.map(v => v ?? '.').join(''))
         })
         console.log(']')
 
