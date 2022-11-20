@@ -6,11 +6,13 @@ export class Filer {
         return Filer.ReadAllLines(localpath).join('\n')
     }
     static ReadAllLines(localpath: string): string[] {
-        return (fs.readFileSync(path.join(__dirname, localpath), 'utf8') as string)
+        let lines = (fs.readFileSync(path.join(__dirname, localpath), 'utf8') as string)
             .replaceAll('\r', '')
             .SplitLines()
             .filter(l => !l.startsWith('//'))
             .map(l => l.trim())
+        if (lines.at(-1) == '') lines = lines.slice(0, -1)
+        return lines
     }
     static WriteFile(localpath: string, data: string) {
         fs.writeFile(localpath, data, err => { if (err) console.log(err) })

@@ -13,3 +13,17 @@ export function Euler() {
         xy.Y.Log()
     }
 }
+
+export function DFT(signal: number[]) {
+    const angles = signal.map((_, i, a) => 2 * Math.PI * i / a.length).Log()
+
+    const out = signal.map((_, f, s) => {
+        //step 1
+        s.reduce((xy, v, n) => {
+            return xy.plus(new XY(1, 0).pow(v))
+        }, new XY)
+
+
+    })
+
+}
