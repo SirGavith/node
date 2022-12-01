@@ -1,3 +1,4 @@
+import { Cx } from "./Complex"
 import { Array2D, XY } from "./XY"
 
 interface Array<T> {
@@ -33,6 +34,7 @@ interface Array<T> {
 
     IncrementOrCreate2D(val1: number, val2: number): void
     toObject(): {}
+    toCx(): Cx[]
 
     //String
     toIntArray(radix?: number): number[]
@@ -242,6 +244,9 @@ Array.prototype.IncrementOrCreate2D = function(val1: number, val2: number) {
 }
 Array.prototype.toObject = function() {
     return Object.fromEntries(this)
+}
+Array.prototype.toCx = function() {
+    return this.map(v => new Cx(v))
 }
 
 export function Range(start: number, stop: number) {

@@ -36,6 +36,7 @@ interface Array<T> {
     Sum(): T
     Product(): T
     toInt(radix?: number): number
+    toCx(): Cxp[]
 
     //String
     toIntArray(radix?: number): number[]

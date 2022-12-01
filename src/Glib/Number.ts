@@ -8,6 +8,7 @@ interface Number {
     SumOfLess(): number
     Floor(): number
     Ceil(): number
+    RoundFloating(epsilon?: number): number
     Log(): number
 }
 type numericals = number | bigint
@@ -34,6 +35,10 @@ Number.prototype.Floor = function() {
 }
 Number.prototype.Ceil = function() {
     return Math.ceil(this.valueOf())
+}
+Number.prototype.RoundFloating = function(epsilon = 0.000001) {
+    const r = Math.round(this.valueOf())
+    return (Math.abs(r - this.valueOf()) < epsilon) ? r : this.valueOf()
 }
 Number.prototype.Log = function() {
     console.log(this)

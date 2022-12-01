@@ -6,6 +6,7 @@ interface String {
     toArray(includeNewlines?: boolean): string[]
     in(str: string): boolean
     SplitLines(): string[]
+    Split2Lines(): string[]
     RegexTest(regex: RegExp): boolean
     ReplaceMap(map: { [key: string]: string }): string
     RemoveChars(chars: string[]): string
@@ -41,6 +42,9 @@ String.prototype.in = function(str: string) {
 }
 String.prototype.SplitLines = function() {
     return this.valueOf().split('\n').map(s => s.replaceAll('\r', ''))
+}
+String.prototype.Split2Lines = function () {
+    return this.valueOf().split('\n\n').map(s => s.replaceAll('\r', ''))
 }
 String.prototype.RegexTest = function(regex: RegExp) {
     return regex.test(this.valueOf())

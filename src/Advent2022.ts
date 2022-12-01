@@ -12,9 +12,25 @@ const Data = Filer.ReadAllLines(UseExample ? '../../data/example.txt' : '../../d
     DataFull = Filer.ReadFile(UseExample ? '../../data/example.txt' : '../../data/input.txt')
 
 export function Day1() {
+    let max = 0
+    let e: number | undefined = undefined;
+    DataFull.split('\n\n').forEach((v,i) => {
+        const sum = v.toIntList().Sum()
+        if (sum > max) {
+            max = sum
+            e = i
+        }
+    })
+    console.log(e)
+    max.Log()
+}
 
-    Data.toIntArray().ReduceAccumulate((p, v) => v > p ? 1 : 0).Log()
+export function Day1_2() {
 
-    GArray.Convolute(Data.toIntArray(), [1/3,1/3,1/3]).map(v => Math.round(3 * v))
-        .ReduceAccumulate((p, v) => v > p ? 1 : 0).Log()
+    const elves = DataFull.Split2Lines().map(v =>
+        v.toIntList().Sum()
+    )
+    elves.sort(Sorts.GreatestFirst)
+
+    elves.slice(0,3).Sum().Log()
 }
