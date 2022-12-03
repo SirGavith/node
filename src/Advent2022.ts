@@ -24,7 +24,6 @@ export function Day1() {
     console.log(e)
     max.Log()
 }
-
 export function Day1_2() {
 
     const elves = DataFull.Split2Lines().map(v =>
@@ -33,4 +32,48 @@ export function Day1_2() {
     elves.sort(Sorts.GreatestFirst)
 
     elves.slice(0,3).Sum().Log()
+}
+
+export function Day2() {
+    Data.map(d => {
+        const p = d.ReplaceMap({
+            'A': '0', // rock
+            'B': '1', // paper
+            'C': '2', // scissors
+
+            'X': '0', // rock
+            'Y': '1', // paper
+            'Z': '2'  // scissors
+        }).split(' ').toIntArray().Log()
+        let score = p[1] + 1
+
+        if (p[0] === p[1]) return score + 3
+
+        if ((p[0] + 1) % 3 === p[1]) return score + 6
+        
+        return score;
+    }).Log().Sum().Log()
+}
+export function Day2_2() {
+    Data.map(d => {
+        const p = d.ReplaceMap({
+            'A': '0', // rock
+            'B': '1', // paper
+            'C': '2', // scissors
+        }).split(' ').Log()
+        let score = p[0].toInt().Log()
+
+        if (p[1] === 'X') {
+            //lose
+            return 1 + ((score + 2) % 3)
+        } else if (p[1] === 'Y') {
+            //draw
+            return 1 + score + 3
+        } else {
+            //win
+            return 1 + ((score + 1) % 3) + 6
+        }
+
+
+    }).Log().Sum().Log()
 }

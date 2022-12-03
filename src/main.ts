@@ -26,7 +26,7 @@ const startTime = process.hrtime()
 // GMath.transformRadix2(r, imag)
 // real.map((r,i) => new Cx(r,imag[i])).Log()
 
-// Advent2022.Day1_2()   
+Advent2022.Day2_2()
 
 const time = process.hrtime(startTime)
 console.log(`Ran in ${time[0]}s ${time[1] / 1_000_000}ms`)
