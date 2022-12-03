@@ -77,3 +77,33 @@ export function Day2_2() {
 
     }).Log().Sum().Log()
 }
+
+export function Day3() {
+    Data.map(sack => {
+        const s = sack.toArray()
+        const c1 = s.slice(0,s.length / 2),
+            c2 = s.slice(s.length / 2)
+        // c1.Log()
+        // c2.Log()
+
+        const code = c1.filter(c => c2.includes(c))[0].charCodeAt(0)
+        return code - (code > 90 ? 96 : 38)
+
+    }).Log().Sum().Log()
+}
+export function Day3_2() {
+    const out: string[] = []
+    for (let i = 0; i < Data.length; i += 3) {
+        const arr = [Data[i].toArray(), Data[i + 1].toArray(), Data[i + 2].toArray()]
+
+        out.push(arr[0].filter(c => arr[1].includes(c)).filter(c => arr[2].includes(c))[0])
+
+    }
+
+    out.Log()
+
+    out.map(char => {
+        const code = char.charCodeAt(0)
+        return code - (code > 90 ? 96 : 38)
+    }).Sum().Log()
+}
