@@ -96,7 +96,9 @@ export function Day3_2() {
     for (let i = 0; i < Data.length; i += 3) {
         const arr = [Data[i].toArray(), Data[i + 1].toArray(), Data[i + 2].toArray()]
 
-        out.push(arr[0].filter(c => arr[1].includes(c)).filter(c => arr[2].includes(c))[0])
+        // out.push(arr[0].filter(c => arr[1].includes(c)).filter(c => arr[2].includes(c))[0])
+
+        out.push(arr[0].Intersect(arr[1]).Intersect(arr[2])[0])
 
     }
 
@@ -106,4 +108,21 @@ export function Day3_2() {
         const code = char.charCodeAt(0)
         return code - (code > 90 ? 96 : 38)
     }).Sum().Log()
+}
+
+export function Day4() {
+    Data.map(l => {
+        const [d1, d2] = l.split(',').map(r => GArray.Range(...r.split('-').toIntArray() as [number, number])) as [number[], number[]]
+
+        return d1.every(n => d2.includes(n)) || d2.every(n => d1.includes(n)) ? 1 : 0
+    }).Sum().Log()
+}
+export function Day4_2() {
+    Data.Count(l => {
+        const [d1, d2] = l.split(',').map(r => GArray.Range(...r.split('-').toIntArray() as [number, number])) as [number[], number[]]
+
+        return d1.Intersect(d2).length > 0
+
+        // return d1.some(n => d2.includes(n)) || d2.some(n => d1.includes(n))
+    }).Log()
 }

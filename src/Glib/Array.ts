@@ -7,6 +7,7 @@ interface Array<T> {
     set(index: number, value: T): void
     forEachPair(action: (value: T[], index: number[]) => void, allowDuplicates?: boolean, allowDoubles?: boolean): void
     forEachGroup(groupSize: number, action: (value: T[], index: number[]) => void, allowDuplicates?: boolean, allowDoubles?: boolean): void
+    Intersect(arr: T[]): T[]
     Uniques(): T[]
     IsUnique(): boolean
     MostCommon(): T
@@ -75,7 +76,9 @@ Array.prototype.forEachGroup = function(groupSize: number, action: (value: any[]
         }
     })
 }
-
+Array.prototype.Intersect = function<T>(a: T[]) {
+    return this.filter(e => a.includes(e))
+}
 function forEachRecursive(array: any[], times: number, action: (values: any[], indices: number[]) => void, values: any[] = [], indices: number[] = []) {
     if (times == 0) {
         action(values, indices)
