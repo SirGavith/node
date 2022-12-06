@@ -266,7 +266,7 @@ Array.prototype.toCx = function() {
 
 export function Range(start: number, stop: number) {
     const x = [start, stop].sort((a, b) => a - b)
-    return Array.from({ length: x[1] - x[0] + 1 }, (_, i) => x[0] + i)
+    return Array.from({ length: x[1] - x[0] }, (_, i) => x[0] + i)
 }
 
 export function Convolute(l1: number[], l2: number[], truncate = true): number[] {

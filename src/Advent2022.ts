@@ -15,12 +15,12 @@ const Data = Filer.ReadAllLines(UseExample ? '../../data/example.txt' : '../../d
 export function Day5() {
     const [t, m] = DataFull.Split2Lines().map(a => a.SplitLines())
     const count = ((t.at(-1)!.length + 1) / 4).Log()
-    const towers: Stack<string>[] = GArray.Range(0, count - 1).map(_ => new Stack)
+    const towers: Stack<string>[] = GArray.Range(0, count).map(_ => new Stack)
     const l = t.slice(0, -1)
     l.reverse()
     l.Log()
     l.forEach(line => {
-        GArray.Range(0, count - 1).forEach(i => {
+        GArray.Range(0, count).forEach(i => {
             const char = line.charAt(i * 4 + 1)
             if (char !== ' ') towers[i].Push(char)
         })
@@ -39,7 +39,7 @@ export function Day5() {
 
     moves.forEach(m => {
         const [count, from, to] = m;
-        GArray.Range(1, count).forEach(_ => {
+        GArray.Range(1, count + 1).forEach(_ => {
             towers[to - 1].Push(towers[from - 1].Pop()!)
         })
     })
@@ -49,11 +49,9 @@ export function Day5() {
 export function Day5_2() {
     const [t, m] = DataFull.Split2Lines().map(a => a.SplitLines())
     const count = ((t.at(-1)!.length + 1) / 4).Log()
-    const towers: Stack<string>[] = GArray.Range(0, count - 1).map(_ => new Stack)
-    const l = t.slice(0, -1)
-    l.reverse()
-    l.forEach(line => {
-        GArray.Range(0, count - 1).forEach(i => {
+    const towers: Stack<string>[] = GArray.Range(0, count).map(_ => new Stack)
+    t.slice(0, -1).ReverseInPlace().forEach(line => {
+        GArray.Range(0, count).forEach(i => {
             const char = line.charAt(i * 4 + 1)
             if (char !== ' ') towers[i].Push(char)
         })
@@ -65,7 +63,7 @@ export function Day5_2() {
     }).forEach(m => {
         const [count, from, to] = m;
 
-        GArray.Range(1, count).map(_ =>
+        GArray.Range(1, count + 1).map(_ =>
             towers[from - 1].Pop()!
         ).ReverseInPlace().forEach(t => {
             towers[to - 1].Push(t)

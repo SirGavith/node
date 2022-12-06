@@ -8,7 +8,7 @@ import { Sorts } from './Glib/Sort';
 const startTime = process.hrtime()
 
 
-Advent2022.Day1_2()
+Advent2022.Day5_2()
 
 
 const time = process.hrtime(startTime)
