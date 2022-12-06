@@ -23,6 +23,7 @@ interface Array<T> {
     MaxFrequency(): number
     Random(): T
     ReverseInPlace(): T[]
+    SortInPlace(compareFn?: ((a: T, b: T) => number) | undefined): T[]
     RemoveUndefined(): NonNullable<T>[]
     WithIndices(): [T, number][]
     Indices(): number[]
