@@ -11,7 +11,17 @@ import * as GArray from './Glib/Array'
 const Data = Filer.ReadAllLines(UseExample ? '../../data/example.txt' : '../../data/input.txt'),
     DataFull = Filer.ReadFile(UseExample ? '../../data/example.txt' : '../../data/input.txt')
 
-//Towers of Hanoi
+export function Day6() {
+    (Data[0].toArray().findIndex((_, i, a) => 
+        a.slice(i, i + 4).Uniques().length == 4
+    ) + 4).Log()
+}
+export function Day6_2() {
+    (Data[0].toArray().findIndex((_, i, a) =>
+        a.slice(i, i + 14).Uniques().length == 14
+    ) + 14).Log()
+}
+
 export function Day5() {
     const [t, m] = DataFull.Split2Lines().map(a => a.SplitLines())
     const count = ((t.at(-1)!.length + 1) / 4).Log()
@@ -50,7 +60,7 @@ export function Day5_2() {
     const [t, m] = DataFull.Split2Lines().map(a => a.SplitLines())
     const count = ((t.at(-1)!.length + 1) / 4)
     const towers: Stack<string>[] = GArray.Range(0, count).map(_ => new Stack)
-    t.slice(0, -1).ReverseInPlace().forEach(line => {
+    t.slice(0, -1).Reverse().forEach(line => {
         GArray.Range(0, count).forEach(i => {
             const char = line.charAt(i * 4 + 1)
             if (char !== ' ') towers[i].Push(char)
@@ -65,7 +75,7 @@ export function Day5_2() {
 
         GArray.Range(1, count + 1).map(_ =>
             towers[from - 1].Pop()!
-        ).ReverseInPlace().forEach(t => {
+        ).Reverse().forEach(t => {
             towers[to - 1].Push(t)
         })
     })
@@ -182,6 +192,6 @@ export function Day1() {
 export function Day1_2() {
     DataFull.Split2Lines().map(v =>
         v.toIntList().Sum())
-    .SortInPlace(Sorts.GreatestFirst)
+    .Sort(Sorts.GreatestFirst)
     .slice(0,3).Sum().Log()
 }

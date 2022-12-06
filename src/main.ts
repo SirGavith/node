@@ -5,7 +5,7 @@ import * as Advent2022 from './Advent2022'
 const startTime = process.hrtime()
 
 
-Advent2022.Day5_2()
+Advent2022.Day6()
 
 
 const time = process.hrtime(startTime)

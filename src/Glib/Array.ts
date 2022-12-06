@@ -25,8 +25,8 @@ interface Array<T> {
     Frequencies(sort?: boolean): [T, number][]
     MaxFrequency(): number
     Random(): T
-    ReverseInPlace(): T[]
-    SortInPlace(compareFn?: ((a: T, b: T) => number) | undefined): T[]
+    Reverse(): T[]
+    Sort(compareFn?: ((a: T, b: T) => number) | undefined): T[]
     RemoveUndefined(): NonNullable<T>[]
     WithIndices(): [T, number][]
     Indices(): number[]
@@ -68,12 +68,12 @@ Array.prototype.forEachPair = function(action: (value: any[], index: number[]) =
 Array.prototype.Random = function() {
     return this[Math.floor((Math.random() * this.length))];
 }
-Array.prototype.ReverseInPlace = function() {
+Array.prototype.Reverse = function() {
     const a = this.Copy()
     a.reverse()
     return a;
 }
-Array.prototype.SortInPlace = function (compareFn ?: ((a: any, b: any) => number) | undefined) {
+Array.prototype.Sort = function (compareFn ?: ((a: any, b: any) => number) | undefined) {
     const a = this.Copy()
     a.sort(compareFn)
     return a;
