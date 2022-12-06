@@ -126,3 +126,66 @@ export function Day4_2() {
         // return d1.some(n => d2.includes(n)) || d2.some(n => d1.includes(n))
     }).Log()
 }
+
+export function Day5() {
+    const [t, m] = DataFull.Split2Lines().map(a => a.SplitLines())
+    const count = ((t.at(-1)!.length + 1) / 4).Log()
+    const towers: Stack<string>[] = GArray.Range(0,count - 1).map(_ => new Stack)
+    const l = t.slice(0, -1)
+    l.reverse()
+    l.Log()
+    l.forEach(line => {
+        GArray.Range(0, count - 1).forEach(i => {
+            const char = line.charAt(i * 4 + 1)
+            if (char !== ' ') towers[i].Push(char)
+        })
+    })
+    const moves = m.map(m => {
+        const a = m.split(' ')
+        return [a[1], a[3], a[5]].toIntArray()
+    })
+
+
+    //towers & moves
+
+    towers.Log()
+    moves.Log()
+
+
+    moves.forEach(m => {
+        const [count, from, to] = m;
+        GArray.Range(1, count).forEach(_ => {
+            towers[to - 1].Push(towers[from - 1].Pop()!)
+        })
+    })
+
+    towers.map(t => t.Peek()).join('').Log()
+}
+export function Day5_2() {
+    const [t, m] = DataFull.Split2Lines().map(a => a.SplitLines())
+    const count = ((t.at(-1)!.length + 1) / 4).Log()
+    const towers: Stack<string>[] = GArray.Range(0, count - 1).map(_ => new Stack)
+    const l = t.slice(0, -1)
+    l.reverse()
+    l.forEach(line => {
+        GArray.Range(0, count - 1).forEach(i => {
+            const char = line.charAt(i * 4 + 1)
+            if (char !== ' ') towers[i].Push(char)
+        })
+    })
+
+    m.map(m => {
+        const a = m.split(' ')
+        return [a[1], a[3], a[5]].toIntArray()
+    }).forEach(m => {
+        const [count, from, to] = m;
+
+        GArray.Range(1, count).map(_ =>
+            towers[from - 1].Pop()!
+        ).ReverseInPlace().forEach(t => {
+            towers[to - 1].Push(t)
+        })
+    })
+
+    towers.map(t => t.Peek()).join('').Log()
+}

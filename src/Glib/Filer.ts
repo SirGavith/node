@@ -10,7 +10,7 @@ export class Filer {
             .replaceAll('\r', '')
             .SplitLines()
             .filter(l => !l.startsWith('//'))
-            .map(l => l.trim())
+            // .map(l => l.trim())
         if (lines.at(-1) == '') lines = lines.slice(0, -1)
         return lines
     }
