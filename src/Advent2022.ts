@@ -48,7 +48,7 @@ export function Day5() {
 }
 export function Day5_2() {
     const [t, m] = DataFull.Split2Lines().map(a => a.SplitLines())
-    const count = ((t.at(-1)!.length + 1) / 4).Log()
+    const count = ((t.at(-1)!.length + 1) / 4)
     const towers: Stack<string>[] = GArray.Range(0, count).map(_ => new Stack)
     t.slice(0, -1).ReverseInPlace().forEach(line => {
         GArray.Range(0, count).forEach(i => {
