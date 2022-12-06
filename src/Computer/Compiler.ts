@@ -175,6 +175,7 @@ export function CompilerMU1(exp: Expression): string[/** assembly */] {
                 case Operators.And: {
                     //Logical
                     // return
+                    break
                 }
                 case Operators.Decrement: {
                     if (!exp.Operand) throw new CompilerError('Decrement expression', exp, 'requires an operand')
@@ -189,9 +190,11 @@ export function CompilerMU1(exp: Expression): string[/** assembly */] {
                 }
                 case Operators.GreaterThan: {
                     // return
+                    break
                 }
                 case Operators.GreaterThanEQ: {
                     // return
+                    break
                 }
                 case Operators.Increment: {
                     if (!exp.Operand || exp.Operand.Type !== ExpressionTypes.Variable) throw new CompilerError('Increment expression', exp, 'requires a variable operand')
@@ -200,15 +203,19 @@ export function CompilerMU1(exp: Expression): string[/** assembly */] {
                 }
                 case Operators.IsEqual: {
                     // return
+                    break
                 }
                 case Operators.IsNotEqual: {
                     // return
+                    break
                 }
                 case Operators.LessThan: {
                     // return
+                    break
                 }
                 case Operators.LessThanEQ: {
                     // return
+                    break
                 }
                 case Operators.Minus: {
                     if (!exp.Operand || !exp.Operand2) throw new CompilerError('Subtraction expression', exp, 'requires two operands')
@@ -263,6 +270,7 @@ export function CompilerMU1(exp: Expression): string[/** assembly */] {
                     throw new CompilerError('Unknown Operator', exp.Operator)
                 }
             }
+            break
         }
         case ExpressionTypes.Variable: {
             if (!exp.Identifier) throw new CompilerError('Variable expression', exp, 'requires an identifier')
@@ -282,8 +290,8 @@ export function CompilerMU1(exp: Expression): string[/** assembly */] {
                 CompilerMU1(exp.Body),
                 `@${endJump}`].flat()
         }
-        default: throw new CompilerError('unknown expression', exp)
     }
+    throw new CompilerError('unknown expression', exp)
 }
 
 // const c = Lexer(`
