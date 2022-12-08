@@ -11,6 +11,132 @@ import * as GArray from './Glib/Array'
 const Data = Filer.ReadAllLines(UseExample ? '../../data/example.txt' : '../../data/input.txt'),
     DataFull = Filer.ReadFile(UseExample ? '../../data/example.txt' : '../../data/input.txt')
 
+export function Day7() {
+    class Directory {
+        constructor(public Name: string, public Parent: null | Directory = null) {}
+        Children: Array<Directory | File> = []
+
+        GetSize(): number {
+            return this.Children.map(c => c.GetSize()).Sum()
+        }
+    }
+    class File {
+        public Size: number
+        constructor (size: string, public Name: string) {
+            this.Size = size.toInt()
+        }
+        GetSize() { return this.Size }
+    }
+
+    const system = new Directory('/')
+
+    const stack = Data.reduce((path, l) => {
+        if (l.startsWith('$')) {
+            l = l.slice(2)
+            if (l.startsWith('cd')) {
+                l = l.slice(3)
+                if (l.startsWith('..')) {
+                    path.Pop()
+                }
+                else {
+                    // cd into dir
+                    const child = path.Peek()!.Children.find(c => c.Name === l) as Directory | undefined
+                    if (!child) throw new Error('could not find dir of name ' + l)
+                    path.Push(child)
+
+                }
+            }
+        }
+        else {
+            if (l.startsWith('dir')) {
+                l = l.slice(4)
+                path.Peek()!.Children.push(new Directory(l, path.Peek()!))
+            }
+            else {
+                // file
+                path.Peek()!.Children.push(new File(...l.split(' ') as [string, string]))
+            }
+        }
+        return path
+    }, new Stack<Directory>([system])).Log()
+
+    system.Log()
+
+    const reqSize = system.GetSize().Log() - 40_000_000
+
+    const n: number[] = []
+    
+    function func(d: Directory) {
+        d.Children.forEach(c => {
+            if ((c as Directory).Children) {
+                const s = c.GetSize()
+                if (s >= reqSize) {
+                    n.push(s)
+                }
+                func(c as Directory)
+            }
+        })
+    }
+    func(system)
+
+    n.Min().Log()
+}
+export function Day7_2() {
+    class Directory {
+        Children: Directory[] = []
+        Parent: Directory | null
+
+        constructor(public Name: string, Parent: null | Directory) {
+            this.Parent = Parent
+        }
+
+        protected Size?: number
+        GetSize(): number | undefined {
+            return this.Children.flatMap(c => c.Size ?? c.GetSize()).UndefinedIfEmpty()?.Sum() 
+        }
+
+        GetMin = (min?: number) => min ?? ((this.GetSize() ?? Number.MAX_VALUE) - 40_000_000)
+
+        Part1(): number {
+            return this.Children.flatMap(c => 
+                (c.GetSize() && c.GetSize()! <= 100_000) ? c.GetSize()! : 0
+            ).concat(
+                this.Children.flatMap(c => c.Part1())
+            ).UndefinedIfEmpty()?.Sum() ?? 0
+        }
+
+        Part2(min?: number): number | undefined {
+            return this.Children.flatMap(c =>
+                (c.GetSize() && (c.GetSize()! >= this.GetMin(min))) ? c.GetSize() : []
+            ).concat(
+                this.Children.flatMap(c => c.Part2(this.GetMin(min)) ?? [])
+            ).UndefinedIfEmpty()?.Min() 
+        }
+    }
+    class File extends Directory {
+        constructor(Size: string, Name: string) {
+            super(Name, null)
+            this.Size = Size.toInt()
+        }
+    }
+
+    Data.reduce(([system, path], l) => {
+        if (l.startsWith('$ cd')) {
+            if (l.includes('..'))
+                path.Pop()
+            else // cd into dir
+                path.Push(l.slice(5) === '/' ? system : path.Peek()!.Children.find(c => c.Name === l.slice(5))!)
+        }
+        else if (!l.startsWith('$ ls')) { // part of an ls
+            path.Peek()!.Children.push(l.startsWith('dir') ? 
+                new Directory(l.slice(4), path.Peek()!) :      // dir
+                new File(...l.split(' ') as [string, string]))  // file
+        }
+        return [system, path] as [Directory, Stack<Directory>]
+    }, [new Directory('/', null), new Stack<Directory>()] as [Directory, Stack<Directory>])[0]
+    .Part1()?.Log()
+}
+
 export function Day6() {
     (Data[0].toArray().findIndex((_, i, a) => 
         a.slice(i, i + 4).Uniques().length == 4

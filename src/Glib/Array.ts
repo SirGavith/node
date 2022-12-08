@@ -27,6 +27,7 @@ interface Array<T> {
     Random(): T
     Reverse(): T[]
     Sort(compareFn?: ((a: T, b: T) => number) | undefined): T[]
+    UndefinedIfEmpty(): T[] | undefined
     RemoveUndefined(): NonNullable<T>[]
     WithIndices(): [T, number][]
     Indices(): number[]
@@ -204,6 +205,9 @@ Array.prototype.RemoveUndefined = function<T>() {
         if (v != undefined && v != null) arr.push(v as NonNullable<T>)
     }
     return arr
+}
+Array.prototype.UndefinedIfEmpty = function<T>(): T[] | undefined {
+    return this.length === 0 ? undefined : this
 }
 Array.prototype.WithIndices = function<T>() {
     return (this as T[]).map((v, i) => [v, i] as [T, number])

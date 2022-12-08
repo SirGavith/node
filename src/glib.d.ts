@@ -24,6 +24,7 @@ interface Array<T> {
     Random(): T
     Reverse(): T[]
     Sort(compareFn?: ((a: T, b: T) => number) | undefined): T[]
+    UndefinedIfEmpty(): T[] | undefined
     RemoveUndefined(): NonNullable<T>[]
     WithIndices(): [T, number][]
     Indices(): number[]
