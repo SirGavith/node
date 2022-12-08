@@ -11,6 +11,37 @@ import * as GArray from './Glib/Array'
 const Data = Filer.ReadAllLines(UseExample ? '../../data/example.txt' : '../../data/input.txt'),
     DataFull = Filer.ReadFile(UseExample ? '../../data/example.txt' : '../../data/input.txt')
 
+export function Day8() {
+    Array2D.fromArray(Data.map(l => l.toArray().toIntArray())).Log().map((tree, xy, a) => {
+        if (tree === undefined) throw new Error()
+        //check 
+        const col = a.getCol(xy.X)
+        const row = a.getRow(xy.Y)
+
+        const n = col.slice(0, xy.Y),
+            w = row.slice(0, xy.X),
+            s = col.slice(xy.Y + 1),
+            e = row.slice(xy.X + 1);
+
+        return ([n, w, s, e]).some(dir => dir.every(t => t! < tree))
+
+    }).Log().Flatten().Count().Log()
+}   
+export function Day8_2() {
+    Array2D.fromArray(Data.map(l => l.toArray().toIntArray())).map((tree, xy, a) => 
+        [
+            a.getCol(xy.X).slice(0, xy.Y).Reverse(),
+            a.getRow(xy.Y).slice(0, xy.X).Reverse(),
+            a.getCol(xy.X).slice(xy.Y + 1),
+            a.getRow(xy.Y).slice(xy.X + 1)
+        ].map(dir => 
+            dir.reduce(([s, done], t) =>
+                (done ? [s, true] : t! >= tree! ? [s + 1, true] : [s + 1, false]) as [number, boolean],
+            [0, false] as [number, boolean])[0]
+        ).Product()
+    ).Flatten().Max().Log()
+}  
+
 export function Day7() {
     class Directory {
         constructor(public Name: string, public Parent: null | Directory = null) {}

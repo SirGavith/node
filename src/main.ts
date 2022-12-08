@@ -4,7 +4,7 @@ import * as Advent2022 from './Advent2022'
 
 const startTime = process.hrtime();
 
-Advent2022.Day7_2()
+Advent2022.Day8_2()
 
 
 

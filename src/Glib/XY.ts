@@ -171,8 +171,20 @@ export class Array2D<T> {
             undefined
     }
 
+    getRow(y: number): Array<T|undefined> {
+        return this.Array[y]
+    }
+
+    private cols: Array<T | undefined>[] = []
+    getCol(x: number): Array<T | undefined> {
+        if (this.cols[x] === undefined) 
+            this.cols[x] = this.Array.map(row => row[x])
+        return this.cols[x]
+    }
+
     set(xy:XY, value: T | undefined) {
         this.Array[xy.Y][xy.X] = value
+        this.cols = []
     }
 
     Copy() {
@@ -185,20 +197,20 @@ export class Array2D<T> {
         return xy.Neighbours(includeDiags).map(n => [n, this.get(n)] as [XY, T | undefined]).filter(n => n[1] != undefined) as [XY, T][]
     }
 
-    forEach(lambda: (value: T | undefined, index: XY) => void) {
+    forEach(lambda: (value: T | undefined, index: XY, array: this) => void) {
         for (let y = 0; y < this.Array.length; y++) {
             for (let x = 0; x < this.Array[y]?.length; x++) {
                 let xy = new XY(x, y)
-                lambda(this.get(xy), xy)
+                lambda(this.get(xy), xy, this)
             }
         }
     }
 
-    every(lambda: (value: T | undefined, index: XY) => boolean): boolean {
+    every(lambda: (value: T | undefined, index: XY, array: this) => boolean): boolean {
         for (let y = 0; y < this.Array.length; y++) {
             for (let x = 0; x < this.Array[y]?.length; x++) {
                 let xy = new XY(x, y)
-                if (!lambda(this.get(xy), xy)) {
+                if (!lambda(this.get(xy), xy, this)) {
                     return false
                 }
             }
@@ -206,11 +218,11 @@ export class Array2D<T> {
         return true
     }
     
-    some(lambda: (value: T | undefined, index: XY) => boolean): boolean {
+    some(lambda: (value: T | undefined, index: XY, array: this) => boolean): boolean {
         for (let y = 0; y < this.Array.length; y++) {
             for (let x = 0; x < this.Array[y]?.length; x++) {
                 let xy = new XY(x, y)
-                if (lambda(this.get(xy), xy)) {
+                if (lambda(this.get(xy), xy, this)) {
                     return true
                 }
             }
@@ -218,9 +230,9 @@ export class Array2D<T> {
         return false
     }
 
-    map<TT>(lambda: (value: T | undefined, index: XY) => TT | undefined) {
+    map<TT>(lambda: (value: T | undefined, index: XY, array: this) => TT | undefined) {
         const arr = new Array2D<TT>(this.Size)
-        this.forEach((val, xy) => arr.set(xy, lambda(val, xy)))
+        this.forEach((val, xy) => arr.set(xy, lambda(val, xy, this)))
         return arr
     }
     
