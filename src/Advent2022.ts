@@ -31,44 +31,16 @@ export function Day8() {
     }).Log().Flatten().Count().Log()
 }   
 export function Day8_2() {
-    Array2D.fromArray(Data.map(l => l.toArray().toIntArray())).map((tree, xy, a) => 
-        [
-            a.getCol(xy.X).slice(0, xy.Y).Reverse(),
-            a.getRow(xy.Y).slice(0, xy.X).Reverse(),
-            a.getCol(xy.X).slice(xy.Y + 1),
-            a.getRow(xy.Y).slice(xy.X + 1)
-        ].map(dir => 
-            dir.reduce(([s, done], t) =>
-                (done ? [s, true] : t! >= tree! ? [s + 1, true] : [s + 1, false]) as [number, boolean],
-            [0, false] as [number, boolean])[0]
-        ).Product()
-    ).Flatten().Max().Log()
-}  
-export function Day8_3() {
-
     Array2D.fromArray(Data.map(l => l.toArray().toIntArray()))
-    .map((tree, xy, arr) =>
-
-        arr.getCol(xy.X)!.slice(0, xy.Y).RemoveUndefined() // n
-        .Reverse().Reduce((nS, t) =>
-            [nS + 1, t! >= tree!], 0)
-        * 
-
-        arr.getCol(xy.X)!.slice(xy.Y + 1).RemoveUndefined() // s
-        .Reduce((sS, t) =>
-            [sS + 1, t! >= tree!], 0)
-        *
-
-        arr.getRow(xy.Y)!.slice(0, xy.X).RemoveUndefined() // w
-        .Reverse().Reduce((wS, t) =>
-            [wS + 1, t! >= tree!], 0)
-        *
-
-        arr.getRow(xy.Y)!.slice(xy.X + 1).RemoveUndefined() // e
-        .Reduce((eS, t) =>
-            [eS + 1, t! >= tree!]
-        , 0)
-        
+    .map((tree, xy, a) =>
+        [
+            a.getCol(xy.X).slice(0, xy.Y).Reverse(), // n
+            a.getRow(xy.Y).slice(0, xy.X).Reverse(), // w
+            a.getCol(xy.X).slice(xy.Y + 1),          // s
+            a.getRow(xy.Y).slice(xy.X + 1)           // e
+        ].map(dir => 
+            dir.Reduce((s, t) => [s! + 1, t! >= tree!], 0)
+        ).Product()
     ).Flatten().Max().Log()
 }
 
