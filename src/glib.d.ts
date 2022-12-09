@@ -2,8 +2,13 @@ interface Array<T> {
     /** returns a shallow copy of an array */
     Copy(): T[]
     set(index: number, value: T): void
+    ForEach(action: (value: T, index: number, array: T[]) => boolean | void): void
+    forEachReversed(action: (value: T, index?: number, array?: T[]) => boolean | void): void
     forEachPair(action: (value: T[], index: number[]) => void, allowDuplicates?: boolean, allowDoubles?: boolean): void
     forEachGroup(groupSize: number, action: (value: T[], index: number[]) => void, allowDuplicates?: boolean, allowDoubles?: boolean): void
+    Reduce(action: (prev: T, val: T, index: number, arr: T[]) => T | [T, boolean]): T
+    Reduce(action: (prev: T, val: T, index: number, arr: T[]) => T | [T, boolean], start: T): T
+    Reduce<TT>(action: (prev: TT, val: T, index: number, arr: T[]) => TT | [TT, boolean], start: TT): TT
     Intersect(arr: T[]): T[]
     Uniques(): T[]
     IsUnique(): boolean

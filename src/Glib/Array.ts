@@ -5,8 +5,15 @@ interface Array<T> {
     /** returns a shallow copy of an array */
     Copy(): T[]
     set(index: number, value: T): void
+    ForEach(action: (value: T, index: number, array: T[]) => boolean | void): void
+    forEachReversed(action: (value: T, index?: number, array?: T[]) => boolean | void): void
     forEachPair(action: (value: T[], index: number[]) => void, allowDuplicates?: boolean, allowDoubles?: boolean): void
     forEachGroup(groupSize: number, action: (value: T[], index: number[]) => void, allowDuplicates?: boolean, allowDoubles?: boolean): void
+
+    Reduce(action: (prev: T, val: T, index: number, arr: T[]) => T | [T, boolean]): T
+    Reduce(action: (prev: T, val: T, index: number, arr: T[]) => T | [T, boolean], start: T): T
+    Reduce<TT>(action: (prev: TT, val: T, index: number, arr: T[]) => TT | [TT, boolean], start: TT): TT
+
     Intersect(arr: T[]): T[]
     Uniques(): T[]
     IsUnique(): boolean
@@ -54,6 +61,16 @@ Array.prototype.Copy = function() {
 Array.prototype.set = function<T>(index: number, value: T) {
     this[index] = value
 }
+Array.prototype.ForEach = function <T>(action: (value: T, index: number, array: T[]) => boolean | void): void {
+    for (let i = 0; i < this.length; i++) {
+        if (action(this.at(i), i, this) === true) break
+    }
+}
+Array.prototype.forEachReversed = function<T>(action: (value: T, index: number, array: T[]) => boolean | void): void {
+    for (let i = this.length - 1; i >= 0; i--) {
+        if (action(this.at(i), i, this) === true) break
+    }
+}
 Array.prototype.forEachPair = function(action: (value: any[], index: number[]) => void, allowDuplicates = true, allowDoubles = true) {
     const pairs: string[] = []
     this.forEach((val, i) => {
@@ -66,6 +83,27 @@ Array.prototype.forEachPair = function(action: (value: any[], index: number[]) =
         })
     })
 }
+
+Array.prototype.Reduce = function<T, TT>(action: (prev: TT, val: T, index: number, arr: any[]) => TT | [TT, boolean], start?: TT): TT {
+    let accum: TT = start ?? this.at(0)
+    const arr: T[] = (start !== undefined ? this : this.slice(1))
+    arr.ForEach((v, i, a) => {
+        let ac = action(accum, v, i, a)
+        if ((ac as [TT, boolean])[1] !== undefined) {
+            let ret = (ac as [TT, boolean])[1]
+            accum = (ac as [TT, boolean])[0] as TT
+
+            if (ret === true) {
+                return true;
+            }
+        }
+        else {
+            accum = ac as TT
+        }
+    })
+    return accum
+}
+
 Array.prototype.Random = function() {
     return this[Math.floor((Math.random() * this.length))];
 }

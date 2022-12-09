@@ -160,7 +160,7 @@ export class XY {
 export class Array2D<T> {
     Array: (T | undefined)[][] = []
 
-    constructor(public Size: XY, fillValue: T|undefined = undefined) {
+    constructor(public Size: XY, fillValue: T | undefined = undefined) {
         for (let i = 0; i < Size.Y; i++)
             this.Array.push(Array(Size.X).fill(fillValue))
     }
@@ -177,6 +177,8 @@ export class Array2D<T> {
 
     private cols: Array<T | undefined>[] = []
     getCol(x: number): Array<T | undefined> {
+        // return this.Array.map(row => row[x])
+
         if (this.cols[x] === undefined) 
             this.cols[x] = this.Array.map(row => row[x])
         return this.cols[x]
@@ -251,7 +253,7 @@ export class Array2D<T> {
 
         console.log('[')
         this.Array.forEach(row => {
-            console.log('| '+row.map(v => (v === undefined ? '' : typeof v === "number" && v === Infinity ? '∞' : String(v)).padStart(3)).join())
+            console.log('| '+row.map(v => (v === undefined ? '' : typeof v === "number" && v === Infinity ? '∞' : String(v)).padStart(1)).join())
             // console.log('| '+row.map(v => v ?? '.').join(''))
         })
         console.log(']')
@@ -265,6 +267,14 @@ export class Array2D<T> {
         const arr: [XY, T][] = []
         this.forEach((val, xy) => {
             if (val) arr.push([xy, val])
+        })
+        return arr
+    }
+
+    Rotate(): Array2D<T | undefined> {
+        const arr = new Array2D<T>(this.Size)
+        this.forEach((v, xy) => {
+            arr.set(new XY(xy.Y, xy.X), v)
         })
         return arr
     }

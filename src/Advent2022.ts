@@ -7,9 +7,12 @@ import { Array3D, XYZ } from './Glib/XYZ'
 import { Filer } from './Glib/Filer'
 import { Sorts } from './Glib/Sort'
 import * as GArray from './Glib/Array'
+import { Advent2021 } from './Advent2021'
 
 const Data = Filer.ReadAllLines(UseExample ? '../../data/example.txt' : '../../data/input.txt'),
     DataFull = Filer.ReadFile(UseExample ? '../../data/example.txt' : '../../data/input.txt')
+
+
 
 export function Day8() {
     Array2D.fromArray(Data.map(l => l.toArray().toIntArray())).Log().map((tree, xy, a) => {
@@ -24,7 +27,7 @@ export function Day8() {
             e = row.slice(xy.X + 1);
 
         return ([n, w, s, e]).some(dir => dir.every(t => t! < tree))
-
+        
     }).Log().Flatten().Count().Log()
 }   
 export function Day8_2() {
@@ -41,6 +44,33 @@ export function Day8_2() {
         ).Product()
     ).Flatten().Max().Log()
 }  
+export function Day8_3() {
+
+    Array2D.fromArray(Data.map(l => l.toArray().toIntArray()))
+    .map((tree, xy, arr) =>
+
+        arr.getCol(xy.X)!.slice(0, xy.Y).RemoveUndefined() // n
+        .Reverse().Reduce((nS, t) =>
+            [nS + 1, t! >= tree!], 0)
+        * 
+
+        arr.getCol(xy.X)!.slice(xy.Y + 1).RemoveUndefined() // s
+        .Reduce((sS, t) =>
+            [sS + 1, t! >= tree!], 0)
+        *
+
+        arr.getRow(xy.Y)!.slice(0, xy.X).RemoveUndefined() // w
+        .Reverse().Reduce((wS, t) =>
+            [wS + 1, t! >= tree!], 0)
+        *
+
+        arr.getRow(xy.Y)!.slice(xy.X + 1).RemoveUndefined() // e
+        .Reduce((eS, t) =>
+            [eS + 1, t! >= tree!]
+        , 0)
+        
+    ).Flatten().Max().Log()
+}
 
 export function Day7() {
     class Directory {
