@@ -7,12 +7,9 @@ import { Array3D, XYZ } from './Glib/XYZ'
 import { Filer } from './Glib/Filer'
 import { Sorts } from './Glib/Sort'
 import * as GArray from './Glib/Array'
-import { Advent2021 } from './Advent2021'
 
 const Data = Filer.ReadAllLines(UseExample ? '../../data/example.txt' : '../../data/input.txt'),
     DataFull = Filer.ReadFile(UseExample ? '../../data/example.txt' : '../../data/input.txt')
-
-
 
 export function Day8() {
     Array2D.fromArray(Data.map(l => l.toArray().toIntArray())).Log().map((tree, xy, a) => {

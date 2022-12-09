@@ -177,11 +177,11 @@ export class Array2D<T> {
 
     private cols: Array<T | undefined>[] = []
     getCol(x: number): Array<T | undefined> {
-        // return this.Array.map(row => row[x])
+        return this.Array.map(row => row[x])
 
-        if (this.cols[x] === undefined) 
-            this.cols[x] = this.Array.map(row => row[x])
-        return this.cols[x]
+        // if (this.cols[x] === undefined) 
+        //     this.cols[x] = this.Array.map(row => row[x])
+        // return this.cols[x]
     }
 
     set(xy:XY, value: T | undefined) {
