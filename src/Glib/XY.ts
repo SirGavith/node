@@ -65,6 +65,7 @@ export class XY {
     Round() { return new XY(Math.round(this.X), Math.round(this.Y)) }
     Floor() { return new XY(Math.floor(this.X), Math.floor(this.Y)) }
     Ceil() { return new XY(Math.ceil(this.X), Math.ceil(this.Y)) }
+    Trunc() { return new XY(Math.trunc(this.X), Math.trunc(this.Y)) }
     Abs() { return new XY(Math.abs(this.X), Math.abs(this.Y)) }
     Reverse() { return new XY(this.Y, this.X) }
     Negate() { return new XY().minus(this) }

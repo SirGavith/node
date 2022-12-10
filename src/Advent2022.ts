@@ -7,6 +7,7 @@ import { Array3D, XYZ } from './Glib/XYZ'
 import { Filer } from './Glib/Filer'
 import { Sorts } from './Glib/Sort'
 import * as GArray from './Glib/Array'
+import * as Console from './Glib/Console'
 
 const Data = Filer.ReadAllLines(UseExample ? '../../data/example.txt' : '../../data/input.txt'),
     DataFull = Filer.ReadFile(UseExample ? '../../data/example.txt' : '../../data/input.txt')
@@ -77,27 +78,15 @@ export function Day9_2() {
         tailPath = [new XY]
 
     const getPos = (follower: XY, leader: XY): XY => {
-        const n = leader.Neighbourhood(true)
-        if (!n.some(e => e.EQ(follower))) {
-
-            //move tail
-            const diff = follower.minus(leader)
-
-            const d = diff.div(2)
-
-            if (d.X < 0.9 && d.X > -0.9) d.X = 0
-            if (d.Y < 0.9 && d.Y > -0.9) d.Y = 0
-
-            return leader.plus(d)
-        }
-        return follower
+        return (!leader.Neighbourhood(true).some(e => e.EQ(follower))) ?
+            leader.plus(follower.minus(leader).div(2).Trunc()) :
+            follower
     }
 
     Data.flatMap(l => GArray.Range(0, l.split(' ')[1].toInt()).map(_ => new XY(
         (l.startsWith('R') ? 1 : l.startsWith('L') ? -1 : 0),
         (l.startsWith('U') ? 1 : l.startsWith('D') ? -1 : 0))))
         .forEach((motion, i) => {
-
             snake[0].plusEQ(motion)
 
             snake.slice(1).reduce((leader, follower, ii) => {
@@ -105,12 +94,10 @@ export function Day9_2() {
                 return snake[ii + 1]
             }, snake[0])
 
-
             if (tailPath.every(p => !p.EQ(snake.at(-1)!)))
                 tailPath.push(snake.at(-1)!.Copy())
 
-            console.log(i.toString().padEnd(4), snake.map(r => r.toString()).join('\t'))
-
+            console.log(i.toString().padEnd(4).AsColor(Console.Yellow), snake.map(r => r.toString()).join('\t'))
         })
 
     tailPath.length.Log()

@@ -86,6 +86,7 @@ interface String {
     toArray(includeNewlines?: boolean): string[];
     in(str: string): boolean;
     SplitLines(): string[];
+    Split2Lines(): string[]
     RegexTest(regex: RegExp): boolean;
     ReplaceMap(map: {
         [key: string]: string;
@@ -93,5 +94,6 @@ interface String {
     RemoveChars(chars: string[]): string;
     IsAllCapital(): boolean;
     forEach(lambda: (val: string, index: number) => void): void;
+    AsColor(color: string): string
     Log(): string;
 }

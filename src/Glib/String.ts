@@ -1,3 +1,5 @@
+import * as Console from "./Console"
+
 interface String {
     toIntList(radix?: number, delim?: string): number[]
     toFloatList(delim?: string): number[]
@@ -12,7 +14,8 @@ interface String {
     RemoveChars(chars: string[]): string
     IsAllCapital(): boolean
     forEach(lambda: (val: string, index: number) => void): void
-    Log(): string
+    AsColor(color: string): string
+    Log(color?: string): string
 }
 String.prototype.forEach = function(lambda: (val: string, index: number) => void) {
     this.toArray().forEach((v, i) => lambda(v, i))
@@ -66,7 +69,10 @@ String.prototype.RemoveChars = function(chars: string[]) {
 String.prototype.IsAllCapital = function() {
     return this.toArray().every(char => char === char.toUpperCase())
 }
-String.prototype.Log = function() {
-    console.log(this)
+String.prototype.AsColor = function(color: string) {
+    return color + this + Console.Reset
+}
+String.prototype.Log = function(color?: string) {
+    console.log(color ?? '' + this + Console.Reset)
     return this.valueOf()
 }

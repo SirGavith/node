@@ -83,7 +83,6 @@ Array.prototype.forEachPair = function(action: (value: any[], index: number[]) =
         })
     })
 }
-
 Array.prototype.Reduce = function<T, TT>(action: (prev: TT, val: T, index: number, arr: any[]) => TT | [TT, boolean], start?: TT): TT {
     let accum: TT = start ?? this.at(0)
     const arr: T[] = (start !== undefined ? this : this.slice(1))
@@ -103,7 +102,6 @@ Array.prototype.Reduce = function<T, TT>(action: (prev: TT, val: T, index: numbe
     })
     return accum
 }
-
 Array.prototype.Random = function() {
     return this[Math.floor((Math.random() * this.length))];
 }
