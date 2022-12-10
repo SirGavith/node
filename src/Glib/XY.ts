@@ -78,7 +78,7 @@ export class XY {
     get TaxicabNorm() { return Math.abs(this.X) + Math.abs(this.Y) }
 
     toArray() { return [this.X, this.Y] }
-    toString() { return `${this.X}, ${this.Y}` }
+    toString() { return `${this.X},${this.Y}` }
     Copy() { return new XY(this.X, this.Y) }
 
     foreachCombination(lambda: (xy: XY) => void, startXY = new XY) {
@@ -100,7 +100,7 @@ export class XY {
         this.foreachCombination(xy => combos.push(xy))
         return combos
     }
-
+    // Does not include this
     Neighbours(includeDiags = false) {
         return includeDiags ? [
             this.plus(-1, -1),
@@ -118,7 +118,7 @@ export class XY {
             this.minus(0, 1)
         ]
     }
-
+    // Includes this
     Neighbourhood(includeDiags = false) {
         return includeDiags ? [
             this.plus(-1, -1),
@@ -253,8 +253,8 @@ export class Array2D<T> {
 
         console.log('[')
         this.Array.forEach(row => {
-            console.log('| '+row.map(v => (v === undefined ? '' : typeof v === "number" && v === Infinity ? '∞' : String(v)).padStart(1)).join())
-            // console.log('| '+row.map(v => v ?? '.').join(''))
+            // console.log('| '+row.map(v => (v === undefined ? '' : typeof v === "number" && v === Infinity ? '∞' : String(v)).padStart(1)).join())
+            console.log('| '+row.map(v => v ?? '.').join(''))
         })
         console.log(']')
 

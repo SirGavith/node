@@ -160,7 +160,7 @@ Array.prototype.LeastCommon = function() {
         - this.filter(v => v === b).length
     ).shift()
 }
-Array.prototype.Uniques = function() {
+Array.prototype.Uniques = function () { //isEQ: (a: T, b: T) => boolean = (a, b) => a === b
     return this.filter((value, i) => this.indexOf(value) === i)
 }
 Array.prototype.IsUnique = function() {

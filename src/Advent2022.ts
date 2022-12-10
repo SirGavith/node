@@ -1,4 +1,4 @@
-const UseExample = false
+const UseExample = true
 import { BigMap } from './Glib/BigMap'
 import { LinkedList, LinkedNode } from './Glib/LinkedList'
 import { Stack } from './Glib/Stack'
@@ -10,6 +10,111 @@ import * as GArray from './Glib/Array'
 
 const Data = Filer.ReadAllLines(UseExample ? '../../data/example.txt' : '../../data/input.txt'),
     DataFull = Filer.ReadFile(UseExample ? '../../data/example.txt' : '../../data/input.txt')
+
+export function Day9() {
+
+    let head = new XY,
+        tail = new XY,
+        tailPath = [new XY]
+
+    const getPos = (follower: XY, leader: XY): XY => {
+        const n = leader.Neighbourhood(true)
+        if (!n.some(e => e.EQ(follower))) {
+
+            //move tail
+            const diff = follower.minus(leader)
+
+            const d = diff.div(2)
+
+            if (d.X < 0.9 && d.X > -0.9) d.X = 0
+            if (d.Y < 0.9 && d.Y > -0.9) d.Y = 0
+
+            return leader.plus(d)
+        }
+        return follower
+    }
+
+    Data.flatMap(l => GArray.Range(0, l.split(' ')[1].toInt()).map(_ => new XY(
+        (l.startsWith('R') ? 1 : l.startsWith('L') ? -1 : 0),
+        (l.startsWith('U') ? 1 : l.startsWith('D') ? -1 : 0))))
+    .forEach((motion, i, a) => {
+
+        // if (i % 50 === 0) {
+        //     const arr = new Array2D(new XY(250))
+        //     tailPath.forEach(xy => arr.set(xy.plus(15), '#'))
+        //     arr.set(tail.plus(15), 'T')
+        //     arr.set(head.plus(15), 'H')
+        //     Array2D.fromArray(arr.Array.Reverse()).Log()
+
+        //     console.log('Path: ', tailPath.length, 'Progress: ', (i / a.length * 100) + '%')
+        // }
+
+        head.plusEQ(motion)
+
+        tail = getPos(tail, head)
+
+        if(tailPath.every(p => !p.EQ(tail)))
+            tailPath.push(tail.Copy())
+        
+        console.log(i, head.toString(), tail.toString())
+
+    })
+
+    console.log(head.toString(), tail.toString())
+
+    tailPath.length.Log()
+
+
+    // const arr = new Array2D(new XY(250))
+    // arr.set(new XY(15), 's')
+    // tailPath.forEach(xy => arr.set(xy.plus(15), '#'))
+    // Array2D.fromArray(arr.Array.Reverse()).Log()
+   
+}
+export function Day9_2() {
+
+    let snake = GArray.Range(0, 10).map(_ => new XY),
+        tailPath = [new XY]
+
+    const getPos = (follower: XY, leader: XY): XY => {
+        const n = leader.Neighbourhood(true)
+        if (!n.some(e => e.EQ(follower))) {
+
+            //move tail
+            const diff = follower.minus(leader)
+
+            const d = diff.div(2)
+
+            if (d.X < 0.9 && d.X > -0.9) d.X = 0
+            if (d.Y < 0.9 && d.Y > -0.9) d.Y = 0
+
+            return leader.plus(d)
+        }
+        return follower
+    }
+
+    Data.flatMap(l => GArray.Range(0, l.split(' ')[1].toInt()).map(_ => new XY(
+        (l.startsWith('R') ? 1 : l.startsWith('L') ? -1 : 0),
+        (l.startsWith('U') ? 1 : l.startsWith('D') ? -1 : 0))))
+        .forEach((motion, i) => {
+
+            snake[0].plusEQ(motion)
+
+            snake.slice(1).reduce((leader, follower, ii) => {
+                snake[ii + 1] = getPos(follower, leader)
+                return snake[ii + 1]
+            }, snake[0])
+
+
+            if (tailPath.every(p => !p.EQ(snake.at(-1)!)))
+                tailPath.push(snake.at(-1)!.Copy())
+
+            console.log(i.toString().padEnd(4), snake.map(r => r.toString()).join('\t'))
+
+        })
+
+    tailPath.length.Log()
+}
 
 export function Day8() {
     Array2D.fromArray(Data.map(l => l.toArray().toIntArray())).Log().map((tree, xy, a) => {
