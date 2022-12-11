@@ -27,10 +27,14 @@ String.prototype.toFloatList = function(delim = '\n') {
     return this.split(delim).map(n => parseFloat(n))
 }
 String.prototype.toInt = function(radix?: number) {
-    return parseInt(this.valueOf(), radix)
+    const int = parseInt(this.valueOf(), radix)
+    if (isNaN(int)) throw new Error('String: \''+ this + '\' is not a number')
+    return int
 }
 String.prototype.toFloat = function() {
-    return parseFloat(this.valueOf())
+    const float = parseFloat(this.valueOf())
+    if (isNaN(float)) throw new Error('String: \'' + this + '\' is not a float')
+    return float
 }
 String.prototype.toArray = function(includeNewlines = true) {
     if (!includeNewlines) {

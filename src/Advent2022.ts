@@ -12,6 +12,137 @@ import * as Console from './Glib/Console'
 const Data = Filer.ReadAllLines(UseExample ? '../../data/example.txt' : '../../data/input.txt'),
     DataFull = Filer.ReadFile(UseExample ? '../../data/example.txt' : '../../data/input.txt')
 
+export function Day11() {
+
+    class Monkey {
+        Items: number[] = []
+        private Operator: '*' | '+'
+        private Operand: number
+        Test: number
+        IfTrue: number
+        IfFalse: number
+
+        Inspected = 0
+
+        Operation() {
+            this.Inspected++
+            if (this.Operator === '+')
+                this.Items[0] += this.Operand
+            else if (this.Operator === '*')
+                this.Items[0] *= this.Operand
+            else 
+                this.Items[0] **= this.Operand
+
+        }
+
+        Bore() {
+            this.Items[0] = (this.Items[0] / 3).Floor()
+        }
+
+        TestItem() {
+            const Item = this.Items[0]
+            if (Item % this.Test === 0) {
+                monkeys[this.IfTrue].Items.push(this.Items.shift()!)
+            }
+            else {
+                monkeys[this.IfFalse].Items.push(this.Items.shift()!)
+            }
+        }
+
+        constructor(i: string, op: string, te: string, t: string, f: string) {
+            this.Items = i.slice(16).split(', ').toIntArray()
+            const o = op.slice(21).replace('* old', '^ 2').split(' ')
+            this.Operator = o[0] as typeof this.Operator
+            this.Operand = o[1].toInt()
+            this.Test = te.slice(19)!.toInt()
+            this.IfTrue = t.at(-1)!.toInt()
+            this.IfFalse = f.at(-1)!.toInt()
+        }
+    }
+
+    const monkeys = DataFull.Split2Lines().map(m => 
+        new Monkey (...m.SplitLines().map(l => l.trim()).slice(1) as [string, string, string, string, string])
+    )
+
+
+    GArray.Range(0, 20).forEach(I =>
+        monkeys.forEach((m, i) => {
+            while (m.Items.length > 0) {
+                m.Operation()
+                m.Bore()
+                m.TestItem()
+            }
+        })
+    )
+
+
+    monkeys.map(m => m.Inspected).sort(Sorts.GreatestFirst).slice(0, 2).Product().Log()
+}
+export function Day11_2() {
+
+    class Monkey {
+        Items: number[] = []
+        private Operator: '*' | '+' | '^'
+        private Operand: number
+        Test: number
+        IfTrue: number
+        IfFalse: number
+
+        Inspected = 0
+
+        Operation(prod: number) {
+            this.Inspected++
+            if (this.Operator === '+')
+                this.Items[0] += this.Operand
+            else if (this.Operator === '*')
+                this.Items[0] *= this.Operand
+            else
+                this.Items[0] **= this.Operand
+
+            this.Items[0] %= prod
+        }
+
+        TestItem() {
+            const Item = this.Items[0]
+            if (Item % this.Test === 0) {
+                monkeys[this.IfTrue].Items.push(this.Items.shift()!)
+            }
+            else {
+                monkeys[this.IfFalse].Items.push(this.Items.shift()!)
+            }
+        }
+
+        constructor(i: string, op: string, te: string, t: string, f: string) {
+            this.Items = i.slice(16).split(', ').toIntArray()
+            const o = op.slice(21).replace('* old', '^ 2').split(' ')
+            this.Operator = o[0] as typeof this.Operator
+            this.Operand = o[1].toInt()
+            this.Test = te.slice(19)!.toInt()
+            this.IfTrue = t.at(-1)!.toInt()
+            this.IfFalse = f.at(-1)!.toInt()
+        }
+    }
+
+    const monkeys = DataFull.Split2Lines().map(m =>
+        new Monkey(...m.SplitLines().map(l => l.trim()).slice(1) as [string, string, string, string, string])
+    )
+
+    const prod = monkeys.map(m => m.Test).Product()
+
+
+    GArray.Range(0, 10_000).forEach(I =>
+        monkeys.forEach((m, i) => {
+            while (m.Items.length > 0) {
+                m.Operation(prod)
+                m.TestItem()
+            }
+        })
+    )
+    
+    monkeys.map(m => m.Inspected).Log()
+    monkeys.map(m => m.Inspected).sort(Sorts.GreatestFirst).slice(0, 2).Product().Log()
+}
+
 export function Day10() {
     let X = 1
     let cycle = 0
