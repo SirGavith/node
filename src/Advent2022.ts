@@ -1,4 +1,4 @@
-const UseExample = true
+const UseExample = false
 import { BigMap } from './Glib/BigMap'
 import { LinkedList, LinkedNode } from './Glib/LinkedList'
 import { Stack } from './Glib/Stack'
@@ -11,6 +11,54 @@ import * as Console from './Glib/Console'
 
 const Data = Filer.ReadAllLines(UseExample ? '../../data/example.txt' : '../../data/input.txt'),
     DataFull = Filer.ReadFile(UseExample ? '../../data/example.txt' : '../../data/input.txt')
+
+export function Day10() {
+    let X = 1
+    let cycle = 0
+    let strengths = 0
+
+    const Cycle = () => {
+        cycle++
+        if (cycle % 40 === 20) {
+            strengths += cycle * X
+            console.log(cycle, X)
+        }
+    }
+
+    Data.forEach(instruction => {
+        const i = instruction.split(' ')
+        Cycle()
+        if (i[0] === 'addx') {
+            Cycle()
+            X += i[1].toInt()
+        }
+    })
+
+    strengths.Log()
+}
+export function Day10_2() {
+    let X = 1
+    let cycle = 0
+    const screen: string[] = [] // 240
+
+    const Cycle = () => {
+        screen[cycle] = (X - (cycle % 40)).InRangeEq(-1, 1) ? '#' : '.'
+        cycle++
+    }
+
+    Data.forEach(instruction => {
+        const i = instruction.split(' ')
+        Cycle()
+        if (i[0] === 'addx') {
+            Cycle()
+            X += i[1].toInt()
+        }
+    })
+
+    GArray.Range(0, 6).map(i => {
+        screen.slice(i * 40, (i + 1) * 40).join('').Log()
+    })
+}
 
 export function Day9() {
 
