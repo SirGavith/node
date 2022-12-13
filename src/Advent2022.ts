@@ -12,6 +12,154 @@ import * as Console from './Glib/Console'
 const Data = Filer.ReadAllLines(UseExample ? '../../data/example.txt' : '../../data/input.txt'),
     DataFull = Filer.ReadFile(UseExample ? '../../data/example.txt' : '../../data/input.txt')
 
+export function Day12() {
+    interface Square {
+        height: number
+        neighbors: XY[]
+    }
+    
+    let start: XY = new XY,
+        end: XY = new XY
+
+    let d = Array2D.fromArray(Data.map(l => l.toArray()))
+        .map((h, xy) => {
+            if (h === 'S') {
+                start = xy;
+                return 'a'
+            }
+            else if (h === 'E') {
+                end = xy
+                return 'z'
+            }
+            return h
+        }).map(e =>
+                ({ height: e!.charCodeAt(0) - ('a').charCodeAt(0) } as Square))
+
+    d.forEach((node, xy) => {
+        node!.neighbors = xy.Neighbours(false).filter(nxy => d.get(nxy) && d.get(nxy)!.height <= node!.height + 1 )
+    })
+
+    d.map(h => h?.height).Log()
+
+    const pathlen = (s: XY) => {
+        // Dijkstra's Algorithm
+
+        interface Node {
+            square: Square
+            distance: number
+            visited: boolean
+        }
+
+        const dd = new Array2D<Node>(d.Size).map((_, xy) => ({
+            square: d.get(xy)!,
+            distance: Number.POSITIVE_INFINITY,
+            visited: false
+        }))
+
+        const unvistied = dd.Entries().filter(n => !n[1].visited)
+        dd.get(s)!.distance = 0
+        let currXY: XY = s
+
+        for (let i = 0; ; i++) {
+            if (currXY.EQ(end)) break
+
+            const node = dd.get(currXY)!;
+
+            node.square.neighbors.forEach(neighbour => {
+                const n = dd.get(neighbour)
+                if (n && !n.visited) {
+                    n.distance = [n.distance, node.distance + 1].Min()
+                }
+            })
+            node.visited = true
+            unvistied.splice(unvistied.findIndex(val => val[0].EQ(currXY)), 1)
+
+            currXY = unvistied.reduce((least, val) => {
+                if (val[1].distance < least[1].distance) least = val
+                return least
+            }, [new XY, { distance: Number.MAX_VALUE }] as [XY, Node])[0]
+        }
+
+        return dd.get(currXY)!.distance
+    }
+
+    pathlen(start).Log()
+}
+
+export function Day12_2() {
+    interface Square {
+        height: number
+        neighbors: XY[]
+    }
+    let end: XY = new XY
+
+    let d = Array2D.fromArray(Data.map(l => l.toArray()))
+        .map((h, xy) => {
+            if (h === 'S') return 'a'
+            else if (h === 'E') {
+                end = xy
+                return 'z'
+            }
+            return h
+        }).map(e =>
+            ({ height: e!.charCodeAt(0) - ('a').charCodeAt(0) } as Square))
+
+    d.forEach((node, xy) => {
+        node!.neighbors = xy.Neighbours(false).filter(nxy => d.get(nxy) && d.get(nxy)!.height >= node!.height - 1)
+    })
+
+    d.map(h => h?.height).Log()
+
+
+    // const starts = d.Entries().filter(s => s[1].height === 0).map(s => s[0])
+
+
+    const pathlen = (s: XY) => {
+        // Dijkstra's Algorithm backwards
+
+        interface Node {
+            square: Square
+            distance: number
+            visited: boolean
+        }
+
+        const dd = new Array2D<Node>(d.Size).map((_, xy) => ({
+            square: d.get(xy)!,
+            distance: Number.POSITIVE_INFINITY,
+            visited: false
+        }))
+
+        const unvistied = dd.Entries().filter(n => !n[1].visited)
+        dd.get(s)!.distance = 0
+        let currXY: XY = s
+
+        for (let i = 0; ; i++) {
+            const node = dd.get(currXY)!;
+
+            if (node.square.height === 0) break
+
+            node.square.neighbors.forEach(neighbour => {
+                const n = dd.get(neighbour)
+                if (n && !n.visited) {
+                    n.distance = [n.distance, node.distance + 1].Min()
+                }
+            })
+            node.visited = true
+            unvistied.splice(unvistied.findIndex(val => val[0].EQ(currXY)), 1)
+
+            currXY = unvistied.reduce((least, val) => {
+                if (val[1].distance < least[1].distance) least = val
+                return least
+            }, [new XY, { distance: Number.MAX_VALUE }] as [XY, Node])[0]
+        }
+
+        return dd.get(currXY)!.distance
+    }
+
+    pathlen(end).Log()
+}
+
+
 export function Day11() {
 
     class Monkey {
@@ -32,7 +180,6 @@ export function Day11() {
                 this.Items[0] *= this.Operand
             else 
                 this.Items[0] **= this.Operand
-
         }
 
         Bore() {
@@ -66,7 +213,7 @@ export function Day11() {
 
 
     GArray.Range(0, 20).forEach(I =>
-        monkeys.forEach((m, i) => {
+        monkeys.forEach(m => {
             while (m.Items.length > 0) {
                 m.Operation()
                 m.Bore()
