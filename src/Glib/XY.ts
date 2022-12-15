@@ -254,8 +254,17 @@ export class Array2D<T> {
 
         console.log('[')
         this.Array.forEach(row => {
-            // console.log('| '+row.map(v => (v === undefined ? '' : typeof v === "number" && v === Infinity ? '∞' : String(v)).padStart(1)).join())
-            console.log('| '+row.map(v => v ?? '.').join(''))
+            console.log('| ' + 
+                row.map(v => (
+                    v === undefined ? '.' :
+                    v === true ? '#' :
+                    v === false ? 'o' :
+                    typeof v === "number" && v === Infinity ? '∞' : String(v)
+                    
+                    ).padStart(1)
+                ).join('')
+            )
+            // console.log('| '+row.map(v => v ?? '.').join(''))
         })
         console.log(']')
 

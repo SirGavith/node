@@ -1,9 +1,6 @@
 const UseExample = false
-import { BigMap } from './Glib/BigMap'
-import { LinkedList, LinkedNode } from './Glib/LinkedList'
 import { Stack } from './Glib/Stack'
-import { Array2D as Array2D, XY } from './Glib/XY'
-import { Array3D, XYZ } from './Glib/XYZ'
+import { Array2D, XY } from './Glib/XY'
 import { Filer } from './Glib/Filer'
 import { Sorts } from './Glib/Sort'
 import * as GArray from './Glib/Array'
@@ -11,6 +8,302 @@ import * as Console from './Glib/Console'
 
 const Data = Filer.ReadAllLines(UseExample ? '../../data/example.txt' : '../../data/input.txt'),
     DataFull = Filer.ReadFile(UseExample ? '../../data/example.txt' : '../../data/input.txt')
+
+export function Day14() {
+    const lines = Data.map(l => l.split(' -> ')
+        .map(xy => new XY(...xy.split(',').toIntArray() as [number, number])))
+
+    const max = lines.flat().reduce((max, xy) => new XY(xy.X > max.X ? xy.X : max.X, xy.Y > max.Y ? xy.Y : max.Y), new XY)
+    const min = lines.flat().reduce((min, xy) => new XY(xy.X < min.X ? xy.X : min.X, xy.Y < min.Y ? xy.Y : min.Y), new XY(Number.POSITIVE_INFINITY))
+    // const shift = new XY(-min.X, 0)
+    const sandPos = new XY(500, 0)
+
+    const arr = new Array2D<boolean>(max.plus(500, 3))
+    // rock
+    lines.forEach(l => {
+        l.reduce((p, c) => {
+            if (p.X > c.X) {
+                if (p.Y !== c.Y) throw new Error()
+                for (let i = c.X; i <= p.X; i++)
+                    arr.set(new XY(i, c.Y), true)
+            }
+            else if (p.X < c.X) {
+                if (p.Y !== c.Y) throw new Error()
+                for (let i = c.X; i >= p.X; i--)
+                    arr.set(new XY(i, c.Y), true)
+            }
+            else if (p.Y > c.Y) {
+                if (p.X !== c.X) throw new Error()
+                for (let i = c.Y; i <= p.Y; i++)
+                    arr.set(new XY(c.X, i), true)
+            }
+            else if (p.Y < c.Y) {
+                if (p.X !== c.X) throw new Error()
+                for (let i = c.Y; i >= p.Y; i--)
+                    arr.set(new XY(c.X, i), true)
+            }
+
+            return c
+        })
+    })
+
+    // sand   
+    let i = 0 
+    let b = true
+    while (true) {
+        const pos = sandPos.Copy()
+        while (true) {
+            if (arr.get(pos.plus(0, 1)) === undefined) {
+                pos.plusEQ(0, 1)
+            }
+            else if (arr.get(pos.plus(-1, 1)) === undefined) {
+                pos.plusEQ(-1, 1)
+            }
+            else if (arr.get(pos.plus(1, 1)) === undefined) {
+                pos.plusEQ(1, 1)
+            }
+            else {
+                break
+            }
+            if (pos.IsGreaterEQEither(arr.Size)) {
+                b = false
+                break
+            }
+        }
+        if (!b) break
+        arr.set(pos, false)
+        i++
+    }
+
+
+    arr.Log()
+    i.Log()
+}
+export function Day14_2() {
+    const lines = Data.map(l => l.split(' -> ')
+        .map(xy => new XY(...xy.split(',').toIntArray() as [number, number])))
+
+    const max = lines.flat().reduce((max, xy) => new XY(xy.X > max.X ? xy.X : max.X, xy.Y > max.Y ? xy.Y : max.Y), new XY)
+    const min = lines.flat().reduce((min, xy) => new XY(xy.X < min.X ? xy.X : min.X, xy.Y < min.Y ? xy.Y : min.Y), new XY(Number.POSITIVE_INFINITY))
+    // const shift = new XY(-min.X, 0)
+    const sandPos = new XY(500, 0)
+
+    const arr = new Array2D<boolean>(max.plus(500, 3))
+    // rock
+    lines.forEach(l => {
+        l.reduce((p, c) => {
+            if (p.X > c.X) {
+                if (p.Y !== c.Y) throw new Error()
+                for (let i = c.X; i <= p.X; i++)
+                    arr.set(new XY(i, c.Y), true)
+            }
+            else if (p.X < c.X) {
+                if (p.Y !== c.Y) throw new Error()
+                for (let i = c.X; i >= p.X; i--)
+                    arr.set(new XY(i, c.Y), true)
+            }
+            else if (p.Y > c.Y) {
+                if (p.X !== c.X) throw new Error()
+                for (let i = c.Y; i <= p.Y; i++)
+                    arr.set(new XY(c.X, i), true)
+            }
+            else if (p.Y < c.Y) {
+                if (p.X !== c.X) throw new Error()
+                for (let i = c.Y; i >= p.Y; i--)
+                    arr.set(new XY(c.X, i), true)
+            }
+
+            return c
+        })
+    })
+
+    arr.Array.at(-1)?.fill(true)
+
+    // sand   
+    let i = 0
+    while (true) {
+        const pos = sandPos.Copy()
+        while (true) {
+            if (arr.get(pos.plus(0, 1)) === undefined) {
+                pos.plusEQ(0, 1)
+            }
+            else if (arr.get(pos.plus(-1, 1)) === undefined) {
+                pos.plusEQ(-1, 1)
+            }
+            else if (arr.get(pos.plus(1, 1)) === undefined) {
+                pos.plusEQ(1, 1)
+            }
+            else {
+                break
+            }
+        }
+        arr.set(pos, false)
+        i++
+        if (pos.EQ(sandPos)) break
+    }
+
+
+    arr.Log()
+    i.Log()
+}
+
+export function Day13() {
+    type List = (number | List)[]
+
+    function parseList(l: string): List {
+        const list: List = []
+
+        if (!l.startsWith('[') && l.endsWith(']')) 
+            throw new Error('bad list')
+        let start = 1
+        let depth = 0
+        for (let i = 0; i < l.length; i++) {
+            const char = l.charAt(i)
+            if (depth === 1 && (char === ',' || char === ']')) {
+                //delim
+
+                if (start !== i) {
+                    const e = l.slice(start, i)
+
+                    const intE = parseInt(e)
+                    if (!isNaN(intE)) {
+                        list.push(e.toInt())
+                    }
+                    else {
+                        //NaN
+                        list.push(parseList(e))
+                    }
+                }
+
+
+                start = i + 1
+            }
+            else if (char === '[') depth++
+            else if (char === ']') depth--
+        }
+
+        return list
+    }
+    function compare(left: List, right: List): boolean | undefined {
+        for (let i = 0; i < left.length && i < right.length; i++) {
+            let lVal = left[i]
+            let rVal = right[i]
+
+            if (typeof lVal === 'number' && typeof rVal === 'number') {
+                //lower int comes first
+                if (lVal < rVal) return true
+                else if (rVal < lVal) return false
+                else continue
+            }
+            if (typeof lVal === 'number') {
+                lVal = [lVal] as List
+            }
+            if (typeof rVal === 'number') {
+                rVal = [rVal] as List
+            }
+            //both arrs
+            const comp = compare(lVal, rVal)
+            if (comp !== undefined) return comp
+            else continue
+        }
+        //ran out of items
+        if (left.length < right.length)
+            return true // correct order
+        else if (right.length < left.length)
+            return false // wrong order
+        return undefined // no determination
+
+    }
+
+    parseList(Data[3])
+
+    DataFull.Split2Lines().map(lines => {
+        const [pleft, pright] = lines.SplitLines().map(l => parseList(l))
+
+        return compare(pleft, pright)
+    }).Log().reduce((sum, a, i) => sum + (a ? i + 1 : 0), 0).Log()
+}
+export function Day13_2() {
+    type List = (number | List)[]
+
+    function parseList(l: string): List {
+        const list: List = []
+        let start = 1
+        let depth = 0
+        for (let i = 0; i < l.length; i++) {
+            const char = l.charAt(i)
+            
+            if (depth === 1 && (char === ',' || char === ']')) {
+                //delim
+
+                if (start !== i) {
+                    const e = l.slice(start, i)
+
+                    const intE = parseInt(e)
+                    if (!isNaN(intE)) {
+                        list.push(e.toInt())
+                    }
+                    else {//NaN
+                        list.push(parseList(e))
+                    }
+                }
+                start = i + 1
+            }
+            else if (char === '[') depth++
+            else if (char === ']') depth--
+        }
+        return list
+    }
+    function compare(left: List, right: List): boolean | undefined {
+        for (let i = 0; i < left.length && i < right.length; i++) {
+            let lVal = left[i]
+            let rVal = right[i]
+
+            if (typeof lVal === 'number' && typeof rVal === 'number') {
+                //lower int comes first
+                if (lVal < rVal) return true
+                else if (rVal < lVal) return false
+                else continue
+            }
+            if (typeof lVal === 'number') {
+                lVal = [lVal] as List
+            }
+            if (typeof rVal === 'number') {
+                rVal = [rVal] as List
+            }
+            //both arrs
+            const comp = compare(lVal, rVal)
+            if (comp !== undefined) return comp
+            else continue
+        }
+        //ran out of items
+        if (left.length < right.length)
+            return true // correct order
+        else if (right.length < left.length)
+            return false // wrong order
+        return undefined // no determination
+
+    }
+
+
+    const packets = Data.filter(l => l !== '').map((l, i) => [parseList(l), i] as [List, number])
+
+    packets.sort((a, b) => {
+        const comp = compare(a[0], b[0])
+        if (comp === undefined) return 0
+        if (comp === false) return 1
+        return -1
+    })
+
+    packets.map(p => p[0]).Log();
+
+    const a = packets.findIndex(e => e[1] === 0) + 1,
+          b = packets.findIndex(e => e[1] === 1) + 1
+
+    console.log(a, b, a * b)
+
+
+}
 
 export function Day12() {
     interface Square {
@@ -85,7 +378,6 @@ export function Day12() {
 
     pathlen(start).Log()
 }
-
 export function Day12_2() {
     interface Square {
         height: number
@@ -158,7 +450,6 @@ export function Day12_2() {
 
     pathlen(end).Log()
 }
-
 
 export function Day11() {
 
