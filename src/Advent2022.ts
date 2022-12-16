@@ -5,9 +5,92 @@ import { Filer } from './Glib/Filer'
 import { Sorts } from './Glib/Sort'
 import * as GArray from './Glib/Array'
 import * as Console from './Glib/Console'
+import { BigSet } from './Glib/BigSet'
 
 const Data = Filer.ReadAllLines(UseExample ? '../../data/example.txt' : '../../data/input.txt'),
     DataFull = Filer.ReadFile(UseExample ? '../../data/example.txt' : '../../data/input.txt')
+
+export function Day15() {
+    const sensors = Data.map(l => {
+        const a = l.RemoveChars([',', ':']).split(' ').map(w => w.slice(2))
+        return [new XY(a[2].toInt(), a[3].toInt()),
+                new XY(a[8].toInt(), a[9].toInt())] as [XY, XY]
+    }).Log()
+
+    const rowY = 3249595
+
+    const squares: BigSet<number> = new BigSet
+
+    sensors.forEach(([s, b], i) => {
+        const dist = s.minus(b).TaxicabNorm
+        const dy = Math.abs(s.Y - rowY)
+        const xHorizon = dist - dy
+        if (xHorizon < 0) return
+        const range = GArray.Range(s.X - xHorizon, s.X + xHorizon + 1)
+        console.log(i.toString().padStart(4),
+            'Dist', dist, '\tOverlap:', range.length, '\tFrom:', s.X - xHorizon, '\tTo', s.X + xHorizon + 1)
+        range.forEach(x => squares.add(x))
+    })
+
+    sensors.forEach(([_, b]) => {
+        if (b.Y === rowY) {
+            squares.delete(b.X)
+        }
+    })
+
+    for (let i = 0; i < 4000000; i++) {
+        if (!squares.has(i)) {
+            i.Log()
+            throw new Error()
+        }
+    }
+
+    // squares.Log()
+    squares.size.Log() 
+}
+export function Day15_2() {
+
+    // example:
+    const maxRange = 4000000
+
+    const sensors = Data.map(l => {
+        const a = l.RemoveChars([',', ':']).split(' ').map(w => w.slice(2))
+        const s = new XY(a[2].toInt(), a[3].toInt())
+        const b = new XY(a[8].toInt(), a[9].toInt())
+
+        return [s, s.minus(b).TaxicabNorm] as [XY, number]
+    }).Log()
+
+ 
+    for (let row = 0; row < maxRange; row++) {
+
+        const ranges = sensors.map(([s, dist], i) => {
+
+            const xHorizon = dist - Math.abs(s.Y - row)
+
+            if (xHorizon < 0) return undefined
+            return [s.X - xHorizon, s.X + xHorizon] as [number, number]
+        }).RemoveUndefined()
+
+
+        ranges.sort(([a, _], [b, __]) => a - b)
+
+        if (ranges[0][0] > 0) throw new Error()
+
+        const r = ranges.reduce(([a, aa], [b, bb]) => {
+            if (aa + 1 >= b) {
+                return [a, aa > bb ? aa : bb]
+            }
+            throw new Error()
+        })
+
+        if (r[1] < maxRange) throw new Error()
+
+
+        if (row % 10000 === 0) row.Log()
+
+    }
+}
 
 export function Day14() {
     const lines = Data.map(l => l.split(' -> ')
