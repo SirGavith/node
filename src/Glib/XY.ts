@@ -152,6 +152,9 @@ export class XY {
         return new XY(t[0], t[1])
     }
 
+    static Zero = new XY
+    static One = new XY(1)
+
     Log() {
         console.log('XY:', this.X, this.Y)
         return this
@@ -253,8 +256,9 @@ export class Array2D<T> {
         // console.log(this)
 
         console.log('[')
-        this.Array.forEach(row => {
+        this.Array.forEachReversed((row, i) => {
             console.log('| ' + 
+                i?.toString().padStart(5) + ' ' +
                 row.map(v => (
                     v === undefined ? '.' :
                     v === true ? '#' :
@@ -279,6 +283,46 @@ export class Array2D<T> {
             if (val) arr.push([xy, val])
         })
         return arr
+    }
+
+    Superimpose(arr: Array2D<T>, offset: XY = new XY) {
+        if (offset.plus(arr.Size).IsGreaterEither(this.Size) || offset.IsLessEither(new XY)) throw new Error('out of bounds')
+
+        const a = this.Copy()
+
+        arr.forEach((val, xy) => {
+            a.set(xy.plus(offset), val)
+        })
+
+        return a
+    }
+
+    SuperimposeSet(arr: Array2D<T>, offset: XY = new XY) {
+        if (offset.plus(arr.Size).IsGreaterEither(this.Size) || offset.IsLessEither(new XY)) throw new Error('out of bounds')
+
+        // const a = this.Copy()
+
+        arr.forEach((val, xy) => {
+            if (val) this.set(xy.plus(offset), val)
+        })
+    }
+
+    SuperimposeEQ(arr: Array2D<T>, offset: XY = new XY) {
+        if (offset.plus(arr.Size).IsGreaterEither(this.Size) || offset.IsLessEither(new XY)) throw new Error('out of bounds')
+
+        const a = new Array2D<boolean>(this.Size, false)
+
+        arr.forEach((val, xy) => {
+            a.set(xy.plus(offset), val !== undefined && val === this.get(xy.plus(offset)))
+        })
+
+        return a
+    }
+
+    SuperimposeOverlap(arr: Array2D<T>, offset: XY) {
+        return arr.some((val, xy) =>
+            val === true && val === this.get(xy.plus(offset))
+        )
     }
 
     Rotate(): Array2D<T | undefined> {

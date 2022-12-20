@@ -1,4 +1,4 @@
-const UseExample = false
+const UseExample = true
 import { Stack } from './Glib/Stack'
 import { Array2D, XY } from './Glib/XY'
 import { Filer } from './Glib/Filer'
@@ -9,6 +9,286 @@ import { BigSet } from './Glib/BigSet'
 
 const Data = Filer.ReadAllLines(UseExample ? '../../data/example.txt' : '../../data/input.txt'),
     DataFull = Filer.ReadFile(UseExample ? '../../data/example.txt' : '../../data/input.txt')
+
+
+    
+export function Day17() {
+    const rocks = [
+        //1
+        Array2D.fromArray([[true, true, true, true]]),
+        //2
+        Array2D.fromArray([[undefined, true, undefined],
+                           [true,  true, true ],
+                           [undefined, true, undefined]]),
+        //3
+        Array2D.fromArray([[true,  true,  true],
+                           [undefined, undefined, true],
+                           [undefined, undefined, true]]),
+        //4
+        Array2D.fromArray([[true],
+                           [true],
+                           [true],
+                           [true]]),
+        //5
+        Array2D.fromArray([[true, true],
+                           [true, true]]),
+    ]
+
+    const cave = new Array2D<boolean | undefined>(new XY(7, 500_000))
+    const jets = Data[0].toArray().map(c => c === '<' ? new XY(-1, 0) : new XY(1, 0))
+    let jetIndex = 0
+    let rockIndex = 0
+    let height = -1
+    let offset = 0
+
+    let seen: {[key: string]: [number, number]} = {}
+
+
+    function summarize() {
+        return GArray.Range(0, 7).map(x => {
+            for (let y = height; y >= 0; y--) {
+                if (cave.get(new XY(x, y))) {
+                    return height - y
+                }
+            }
+        })
+    }
+
+    for (let rockCount = 0; rockCount < 1_000_000_000_000; rockCount++) {
+        //drop tile
+        let pos = new XY(2, height + 4)
+        const rock = rocks[rockIndex]
+        rockIndex++
+        rockIndex %= 5
+
+        while (true) {
+            //try to make rock go to the side
+            let newPos = pos.plus(jets[jetIndex])
+            jetIndex++
+            jetIndex %= jets.length
+
+            if (!newPos.IsLessEither(XY.Zero) && !newPos.plus(rock.Size).IsGreaterEither(cave.Size)) {
+                const overlap = cave.SuperimposeOverlap(rock, newPos)
+                if (!overlap) pos = newPos
+            }
+
+            //try to make rock fall
+            let nnewPos = pos.plus(0, -1)
+
+            if (!nnewPos.IsLessEither(XY.Zero) && !nnewPos.plus(rock.Size).IsGreaterEither(cave.Size)) {
+                const overlap = cave.SuperimposeOverlap(rock, nnewPos)
+                if (!overlap) pos = nnewPos
+                else break
+            }
+            else break
+        }
+        cave.SuperimposeSet(rock, pos)
+
+        height = cave.Array.findIndex((arr) => !arr.some(b => b)) - 1
+
+        const key = [jetIndex, rockIndex, summarize()].toString()
+        console.log(rockCount, jetIndex, rockIndex, summarize().join(','))
+        if (key in seen) {
+            const [lastRockCount, lastHeight] = seen[key]
+            const remainder = 1_000_000_000_000 - rockCount
+            const reps = (remainder / (rockCount - lastRockCount)).Floor()
+            offset = reps * (height - lastHeight)
+            rockCount += reps * (rockCount - lastRockCount)
+            seen = {}
+        }
+        seen[key] = [rockCount, height]
+
+    }
+
+    
+
+    // cave.Log();
+    console.log(height, offset, height + offset +1)
+
+}
+
+export function Day16() {
+
+    const valves = Data.map(v => {
+        return {
+            name: v.slice(6, 8),
+            rate: v.split(' ').at(4)!.slice(5, -1).toInt(),
+            adjacents: v.slice(v.indexOf('valv')).RemoveChars([',']).split(' ').slice(1),
+        }
+    })
+
+    const lookupIndex = valves.map((v, i) =>
+        [v.name, i]).toObject() as { [key: string]: number }
+
+    const nodes = valves.map(v => {
+        return {
+            rate: v.rate,
+            adj: v.adjacents.map(a => lookupIndex[a])
+        }
+    })
+
+
+    
+    const PATH_LEN = 30
+
+    //takes path and returns max Flow on that path
+    function traverse(path: number[], totalFlow: number): [number, number[] | null] {
+
+        if (path.length === PATH_LEN) {
+            return [totalFlow, path]
+        }
+
+        const v = path.at(-1)!
+
+
+        
+        let lastTimeHere: number | null = null
+
+        for (let i = path.length - 2; i >= 0; i--) {
+            if (path[i] === v) {
+                lastTimeHere = i;
+                break;
+            }
+        }
+
+        if (lastTimeHere && path.length - 1 - lastTimeHere  > 1) {
+            let turnedOnSinceLastHere = false
+            for (let i = lastTimeHere + 1; i < path.length - 1; i++) {
+                if (path[i] === path[i - 1]) {
+                    turnedOnSinceLastHere = true
+                    break
+                }
+            }
+
+            if (!turnedOnSinceLastHere) {
+                return [0, null]
+            }
+        }
+
+        // if valve not open
+        let open = false
+        path.reduce((a, b) => {
+            if (a === b && a === v) open = true
+            return b
+        })
+
+        const options: [number, number[] | null][] = []
+
+        if (!open && valves[v].rate > 0) options.push(traverse(path.concat(v), totalFlow + (PATH_LEN - path.length) * valves[v].rate))
+
+        //skip valve
+        for (const a of nodes[v].adj) {
+            options.push(traverse(path.concat(a), totalFlow))
+        }
+
+        const best = options.reduce((a, b) => {
+            if (b[1] === null) return a
+            return a[0] > b[0] ? a : b
+        }, [0, []])
+
+        return best
+    }
+
+    traverse([lookupIndex['AA']], 0).Log() 
+}
+export function Day16_2() {
+    interface Node {
+        name: string,
+        rate: number,
+        adj: string[],
+        time: number
+    }
+
+    interface State {
+        distance: number,
+        prevNode: XY | null,
+        node: Node
+    }
+
+    const nodes = Data.map(v => ({
+        name: v.slice(6, 8),
+        rate: v.split(' ').at(4)!.slice(5, -1).toInt(),
+        adj: v.slice(v.indexOf('valv')).RemoveChars([',']).split(' ').slice(1),
+    }))
+
+    const arr = new Array2D<State>(new XY(nodes.length, 30))
+
+    nodes.forEach((n, i) => GArray.Range(0, 30).map(t => {
+        const nn = n.Copy() as Node
+        nn.time = t
+
+        arr.set(new XY(i, t), {
+            distance: Number.POSITIVE_INFINITY,
+            prevNode: null,
+            node: nn
+        })
+    }))
+
+    const lookup = nodes.map((n, i) => [n.name, i]).toObject() as {[key: string]: number}
+
+    const firstNodeIndex = lookup['AA']
+    arr.get(new XY(firstNodeIndex, 0))!.distance = 0 
+
+
+    //for each node
+    for (let i = 0; i < 29; i++) {
+
+        arr.forEach((state, v) => {
+            if (!state) throw new Error()
+
+            const node = state.node
+
+            if (node.time >= 29) return
+
+            const neighbours: [XY, number][] = node.adj.map(s => [new XY(lookup[s], v.Y + 1), 0])
+
+            //see if I can go back to myself (turn myself on)
+
+            const prevs: XY[] = [v]
+
+            //worried about runnig off the end of the array
+
+            while(state.prevNode !== null) {
+                prevs.push(state.prevNode)
+            }
+
+            let found = false
+            
+            prevs.Reduce((a, b) => {
+                if (a.EQ(b)) found = true
+                return [b, a.EQ(b)]
+            })
+
+            if (!found) {
+                neighbours.push([new XY(v.X, v.Y + 1), 0 - ((29 - i) * node.rate)])
+            }
+
+
+            neighbours.forEach(([u, w]) => {
+                //edge
+
+                if (arr.get(v)!.distance + w < arr.get(u)!.distance) {
+                    arr.get(u)!.distance = arr.get(v)!.distance + w
+                    arr.get(u)!.prevNode = v.Copy()
+                }
+            })
+
+        })
+
+        //print our shortest dist to each node
+
+        arr.map(state => state?.distance).Log()
+
+    }
+
+    arr.getCol(29).Max()!.Log()
+
+
+    
+
+    
+
+}
 
 export function Day15() {
     const sensors = Data.map(l => {
