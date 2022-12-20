@@ -75,6 +75,36 @@ export class XYZ {
         return combos
     }
 
+    // Does not include this
+    Neighbours(includeDiags = false) {
+        if (includeDiags) throw new Error('Not implemented')
+        return includeDiags ? [
+
+        ] : [
+            this.plus(-1, 0, 0),
+            this.plus(1, 0, 0),
+            this.plus(0, 1, 0),
+            this.plus(0, -1, 0),
+            this.plus(0, 0, 1),
+            this.plus(0, 0, -1),
+        ]
+    }
+    // Includes this
+    Neighbourhood(includeDiags = false) {
+        if (includeDiags) throw new Error('Not implemented')
+        return includeDiags ? [
+
+        ] : [
+            this.plus(-1, 0, 0),
+            this.plus(1, 0, 0),
+            this.plus(0, 1, 0),
+            this.Copy(),
+            this.plus(0, -1, 0),
+            this.plus(0, 0, 1),
+            this.plus(0, 0, -1),
+        ]
+    }
+
     Orientations () {
         let [x, y, z] = this.toArray()
         return [

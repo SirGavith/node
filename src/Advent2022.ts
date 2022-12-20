@@ -1,4 +1,4 @@
-const UseExample = true
+const UseExample = false
 import { Stack } from './Glib/Stack'
 import { Array2D, XY } from './Glib/XY'
 import { Filer } from './Glib/Filer'
@@ -6,12 +6,65 @@ import { Sorts } from './Glib/Sort'
 import * as GArray from './Glib/Array'
 import * as Console from './Glib/Console'
 import { BigSet } from './Glib/BigSet'
+import { XYZ } from './Glib/XYZ'
 
 const Data = Filer.ReadAllLines(UseExample ? '../../data/example.txt' : '../../data/input.txt'),
     DataFull = Filer.ReadFile(UseExample ? '../../data/example.txt' : '../../data/input.txt')
 
+export function Day18() {
+    const lava = Data.map(l => new XYZ(...l.split(',').toIntArray() as [number, number, number]))
+    let count = lava.length * 6
 
-    
+    //find bounding box
+    const maxXYZ = lava.reduce((a, b) => new XYZ(Math.max(a.X, b.X), Math.max(a.Y, b.Y), Math.max(a.Z, b.Z))).plus(1)
+    const minXYZ = lava.reduce((a, b) => new XYZ(Math.min(a.X, b.X), Math.min(a.Y, b.Y), Math.min(a.Z, b.Z))).minus(1)
+
+
+    //eval from outside bounding box
+    const shapeVolume: XYZ[] = []
+
+    maxXYZ.foreachCombination(xyz => {
+        shapeVolume.push(xyz)
+    }, minXYZ)
+
+    shapeVolume.splice(0, 1)
+
+    const Q = [minXYZ]
+    while(Q.length > 0) {
+        Q.shift()!.Neighbours(false).forEach(n => {
+            if (n.IsGreaterEQAll(minXYZ) && n.IsLessEQAll(maxXYZ) && !lava.find(p => p.EQ(n))) {
+                if (!Q.find(p => p.EQ(n)) && shapeVolume.find(p => p.EQ(n))) Q.push(n)
+
+                const i = shapeVolume.findIndex(xyz => xyz.EQ(n))
+                if (i !== -1) {
+                    shapeVolume.splice(i, 1)
+                }
+            }
+        })
+    }
+
+    lava.forEach(xyz => {
+        xyz.Neighbours(false).forEach(n => {
+            if (lava.find(p => p.EQ(n))) count--
+        })
+        const i = shapeVolume.findIndex(p => p.EQ(xyz))
+        if (i !== -1) shapeVolume.splice(i, 1)
+    })
+
+    //for all the air left; find how many faces THAT has and subtract them
+
+    shapeVolume.forEach(xyz => {
+        xyz.Neighbours(false).forEach(n => {
+            if (lava.find(p => p.EQ(n))) count--
+        })
+    })
+
+
+    count.Log()
+
+
+}
+
 export function Day17() {
     const rocks = [
         //1
