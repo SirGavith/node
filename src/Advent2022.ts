@@ -11,6 +11,14 @@ import { XYZ } from './Glib/XYZ'
 const Data = Filer.ReadAllLines(UseExample ? '../../data/example.txt' : '../../data/input.txt'),
     DataFull = Filer.ReadFile(UseExample ? '../../data/example.txt' : '../../data/input.txt')
 
+export function Day19() {
+    
+
+    function recurse() {
+
+    }
+}
+
 export function Day18() {
     const lava = Data.map(l => new XYZ(...l.split(',').toIntArray() as [number, number, number]))
     let count = lava.length * 6
@@ -33,10 +41,9 @@ export function Day18() {
     while(Q.length > 0) {
         Q.shift()!.Neighbours(false).forEach(n => {
             if (n.IsGreaterEQAll(minXYZ) && n.IsLessEQAll(maxXYZ) && !lava.find(p => p.EQ(n))) {
-                if (!Q.find(p => p.EQ(n)) && shapeVolume.find(p => p.EQ(n))) Q.push(n)
-
-                const i = shapeVolume.findIndex(xyz => xyz.EQ(n))
-                if (i !== -1) {
+                if (shapeVolume.find(p => p.EQ(n))) {
+                    if (!Q.find(p => p.EQ(n))) Q.push(n)
+                    const i = shapeVolume.findIndex(xyz => xyz.EQ(n))
                     shapeVolume.splice(i, 1)
                 }
             }
@@ -51,6 +58,8 @@ export function Day18() {
         if (i !== -1) shapeVolume.splice(i, 1)
     })
 
+    count.Log()
+
     //for all the air left; find how many faces THAT has and subtract them
 
     shapeVolume.forEach(xyz => {
@@ -59,10 +68,7 @@ export function Day18() {
         })
     })
 
-
     count.Log()
-
-
 }
 
 export function Day17() {
