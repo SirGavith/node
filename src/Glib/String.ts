@@ -5,6 +5,7 @@ interface String {
     toFloatList(delim?: string): number[]
     toInt(radix?: number): number
     toFloat(radix?: number): number
+    toNumsArray(): number[]
     toArray(includeNewlines?: boolean): string[]
     in(str: string): boolean
     SplitLines(): string[]
@@ -36,10 +37,36 @@ String.prototype.toFloat = function() {
     if (isNaN(float)) throw new Error('String: \'' + this + '\' is not a float')
     return float
 }
+String.prototype.toNumsArray = function() {
+    const nums: string[] = []
+    let numI = 0
+    let isNumber = false
+    for (let i = 0; i < this.length; i++) {
+        const code = this.charCodeAt(i)
+        if (code >= 48 && code <= 57) {
+            //digit
+            if (!isNumber) {
+                nums[numI] = ''
+            }
+            isNumber = true
+
+            nums[numI] += this.charAt(i)
+
+        }
+        else {
+            if (isNumber) {
+                isNumber = false
+                numI++
+            }
+        }
+    }
+
+    return nums.toIntArray()
+}
 String.prototype.toArray = function(includeNewlines = true) {
     if (!includeNewlines) {
         return [...this].filter(v => {
-            return v != '\n'
+            return v !== '\n'
         })
     }
     return [...this]

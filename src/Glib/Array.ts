@@ -4,6 +4,8 @@ import { Array2D, XY } from "./XY"
 interface Array<T> {
     /** returns a shallow copy of an array */
     Copy(): T[]
+    CopyFast(): T[]
+    Push(val: T): void
     set(index: number, value: T): void
     ForEach(action: (value: T, index: number, array: T[]) => boolean | void): void
     forEachReversed(action: (value: T, index?: number, array?: T[]) => boolean | void): void
@@ -57,6 +59,15 @@ Array.prototype.Copy = function() {
     })
     a.length = this.length
     return a
+}
+Array.prototype.CopyFast = function() {
+    let a: any[] = []
+    for (let i = 0; i < this.length; i++)
+        a[i] = this[i]
+    return a
+}
+Array.prototype.Push = function<T> (val: T) {
+    this[this.length] = val
 }
 Array.prototype.set = function<T>(index: number, value: T) {
     this[index] = value
@@ -318,3 +329,13 @@ export function Convolute(l1: number[], l2: number[], truncate = true): number[]
         .forEach((v, xy) => out.IncrementOrCreate(xy.TaxicabNorm, v))
     return truncate ? out.slice(xy.Least - 1, out.length - xy.Least + 1) : out
 }
+
+export type n1 = [number]
+export type n2 = [number, number]
+export type n3 = [number, number, number]
+export type n4 = [number, number, number, number]
+export type n5 = [number, number, number, number, number]
+export type n6 = [number, number, number, number, number, number]
+export type n7 = [number, number, number, number, number, number, number]
+export type n8 = [number, number, number, number, number, number, number, number]
+export type n9 = [number, number, number, number, number, number, number, number, number]

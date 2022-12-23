@@ -7,16 +7,120 @@ import * as GArray from './Glib/Array'
 import * as Console from './Glib/Console'
 import { BigSet } from './Glib/BigSet'
 import { XYZ } from './Glib/XYZ'
+import { n1, n2, n3, n4, n5, n6, n7, n8, n9 } from './Glib/Array'
 
 const Data = Filer.ReadAllLines(UseExample ? '../../data/example.txt' : '../../data/input.txt'),
     DataFull = Filer.ReadFile(UseExample ? '../../data/example.txt' : '../../data/input.txt')
 
 export function Day19() {
-    
+    const blueprints = Data.map(l => l.toNumsArray().slice(1) as n6)
+        .map((costs) => [costs, 0, [costs[0], costs[1], costs[2], costs[4]].Max()] as [n6, number, number])
+    /*  [ [orecost (ore), claycost (ore), obicost (ore), obicost (clay), geocost (ore), geocost (obi)],
+            max so far;    max ore use per time ] */
+    type blueprint = [n6, number, number]
 
-    function recurse() {
+    let memos: {[key: string]: number /* of geodes */} = {}
 
+    function CopyInt16_4(arr: Int16Array): Int16Array {
+        let a = new Int16Array(4)
+        for (let i = 0; i < 4; i++)
+            a[i] = arr[i]
+        return a
     }
+    function CopyInt8_4(arr: Int8Array): Int8Array {
+        let a = new Int8Array(4)
+        for (let i = 0; i < 4; i++)
+            a[i] = arr[i]
+        return a
+    }
+
+    function maxGeodes(bp: blueprint, timeLeft: number, res: Int16Array, robots: Int8Array): number {
+        //base case (new)
+        if (timeLeft === 1) return res[3] + robots[3]
+
+        //too bad optimization
+        const unrealisticMax = res[3] + robots[3] * timeLeft + (timeLeft * timeLeft - timeLeft) / 2
+        if (unrealisticMax <= bp[1]) return 0
+
+        //memoization
+        const key = timeLeft + ' ' + res[0] + ' ' + res[1] + ' ' + res[2] + ' ' + res[3] + ' ' + robots[0] + ' ' + robots[1] + ' ' + robots[2] + ' ' + robots[3]
+        if (key in memos) return memos[key]
+
+        timeLeft--
+
+        const maxToSpend = [bp[2] * timeLeft, bp[0][3] * timeLeft, bp[0][5] * timeLeft]
+        const endRes = new Int16Array(4)
+
+        for (let i = 0; i < 4; i++) {
+            const r = res[i] + robots[i]
+            //cut off surplus resources
+            if (r > maxToSpend[i]) {
+                endRes[i] = maxToSpend[i]
+            }
+            else endRes[i] = r
+        }
+        const options: number[] = []
+        let optionCount = 0
+        //make an ore robot
+        if (res[0] >= bp[0][0] && robots[0] < bp[2]) {
+            const r = CopyInt8_4(robots)
+            r[0]++
+            const re = CopyInt16_4(endRes)
+            re[0] -= bp[0][0]
+            options[0] = maxGeodes(bp, timeLeft, re, r)
+            optionCount++
+        }     
+        //make an clay robot
+        if (res[0] >= bp[0][1] && robots[1] < bp[0][3]) {
+            const r = CopyInt8_4(robots)
+            r[1]++
+            const re = CopyInt16_4(endRes)
+            re[0] -= bp[0][1]
+            options[1] = maxGeodes(bp, timeLeft, re, r)
+            optionCount++
+        }
+        //make an obi robot
+        if (res[0] >= bp[0][2] && res[1] >= bp[0][3] && robots[2] < bp[0][5]) {
+            const r = CopyInt8_4(robots)
+            r[2]++
+            const re = CopyInt16_4(endRes)
+            re[0] -= bp[0][2]
+            re[1] -= bp[0][3]
+            options[2] = maxGeodes(bp, timeLeft, re, r)
+            optionCount++
+        }
+        //make an geode robot
+        if (res[0] >= bp[0][4] && res[2] >= bp[0][5]) {
+            const r = CopyInt8_4(robots)
+            r[3]++
+            const re = CopyInt16_4(endRes)
+            re[0] -= bp[0][4]
+            re[2] -= bp[0][5]
+            options[3] = maxGeodes(bp, timeLeft, re, r)
+            optionCount++
+        }
+           
+        //do nothing
+        if (optionCount < 4) {
+            options[4] = maxGeodes(bp, timeLeft, endRes, robots)
+        }
+
+        let max = 0
+        for (let i = 0; i < 5; i++) {
+            if (max < options[i]) {
+                max = options[i]
+            }
+        }
+
+        memos[key] = max
+        if (max > bp[1]) bp[1] = max
+        return max
+    }
+
+    blueprints.map((bp, i) => {
+        memos = {}
+        return maxGeodes(bp, 32, new Int16Array([0, 0, 0, 0]), new Int8Array([1, 0, 0, 0])).Log()
+    }).Product().Log()
 }
 
 export function Day18() {
