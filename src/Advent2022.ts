@@ -8,9 +8,425 @@ import * as Console from './Glib/Console'
 import { BigSet } from './Glib/BigSet'
 import { XYZ } from './Glib/XYZ'
 import { n1, n2, n3, n4, n5, n6, n7, n8, n9 } from './Glib/Array'
+import { BiLinkedList, BiLinkedNode, LinkedList } from './Glib/LinkedList'
+import { WhileExpression } from './Computer/Lexer'
 
 const Data = Filer.ReadAllLines(UseExample ? '../../data/example.txt' : '../../data/input.txt'),
     DataFull = Filer.ReadFile(UseExample ? '../../data/example.txt' : '../../data/input.txt')
+
+export function Day22() {
+    
+}
+
+export function Day21() {
+    class OpMonkey {
+        Name: string
+        Operator: '+' | '-' | '*' | '/'
+        Operation:  ((a: number, b: number) => number)
+        LiteralOperands: [string, string]
+        Operands: [OpMonkey | number, OpMonkey | number] | undefined = undefined
+        HumanLeft: boolean | undefined = undefined
+
+        constructor(name: string, s: string[]) {
+            this.Name = name
+            this.LiteralOperands = [s[1], s[3]]
+            this.Operator = s[2] as typeof this.Operator
+            this.Operation =
+                s[2] === '*' ? (a, b) => a * b :
+                s[2] === '+' ? (a, b) => a + b :
+                s[2] === '-' ? (a, b) => a - b :
+                        /* '/' */(a, b) => (a / b).RoundFloating()
+        }
+    }
+
+    let root: OpMonkey
+
+    {
+        const opMonkeyList: OpMonkey[] = []
+        const opMonkeys: { [name: string]: OpMonkey } = {}
+        const yellMonkeys: {[name: string]: number} = {}
+
+        Data.forEach(l => {
+            const s = l.split(' ')
+            const name = s[0].slice(0, -1)
+            if (s.length === 2) {
+                yellMonkeys[name] = s[1].toInt()
+            }
+            else {
+                const monkey = new OpMonkey(name, s)
+                opMonkeyList.push(monkey)
+                opMonkeys[name] = monkey
+
+            }
+        })
+
+        for (let i = 0; i < opMonkeyList.length; i++) {
+            const monkey = opMonkeyList[i],
+                [l0, l1] = monkey.LiteralOperands
+            monkey.Operands = [
+                (l0 in opMonkeys) ? opMonkeys[l0] : yellMonkeys[l0],
+                (l1 in opMonkeys) ? opMonkeys[l1] : yellMonkeys[l1],
+            ]
+        }
+
+        root = opMonkeys['root']
+    }
+
+
+    function humanLeft(monkey: OpMonkey): boolean | undefined {
+        if (monkey.LiteralOperands[0] === 'humn') {
+            monkey.HumanLeft = true
+            return true
+        }
+        if (monkey.LiteralOperands[1] === 'humn') {
+            monkey.HumanLeft = false
+            return false
+        }
+
+        if (typeof monkey.Operands![0] !== 'number') {
+            const leftOfLeft = humanLeft(monkey.Operands![0])
+            if (leftOfLeft !== undefined) {
+                monkey.HumanLeft = true
+                return true
+            }
+        }
+        if (typeof monkey.Operands![1] !== 'number') {
+            const leftOfRight = humanLeft(monkey.Operands![1])
+            if (leftOfRight !== undefined) {
+                monkey.HumanLeft = false
+                return false
+            }
+        }
+        monkey.HumanLeft = undefined
+        return undefined
+    }
+    
+    function result(monkey: OpMonkey): number {
+        if (!monkey.Operands) throw new Error
+
+        const [o0, o1] = monkey.Operands
+        let [a, b] = [0, 0]
+
+        if (typeof o0 === 'number') a = o0
+        else a = result(o0)
+    
+        if (typeof o1 === 'number') b = o1
+        else b = result(o1)
+
+        return monkey.Operation(a, b)
+    }
+
+    function solve(monkey: OpMonkey | number, mustEQ: number | null): number {
+        if (typeof monkey === 'number') {
+            //found human
+            if (mustEQ === null) throw new Error('human child of root')
+            return mustEQ
+        }
+
+        if (monkey.HumanLeft === undefined) throw new Error()
+        if (monkey.Operands === undefined) throw new Error()
+
+        //one child always defined, the other always not
+
+        const left = monkey.Operands[0]
+        const right = monkey.Operands[1]
+
+        if (monkey.HumanLeft === true) {
+            //calculate right
+            const resRight = typeof right === 'number' ? right : result(right)
+
+            if (monkey === root) {
+                if (mustEQ !== null) throw new Error()
+                //left must equal resRight
+                return solve(left, resRight)
+            }
+            else {
+                if (mustEQ === null) throw new Error()
+
+                if (monkey.Operator === '+') {
+                    // left + resRight === mustEQ
+                    // left === mustEQ - resRight
+                    return solve(left, mustEQ - resRight)
+                }
+                else if (monkey.Operator === '-') {
+                    // left - resRight === mustEQ
+                    // left === mustEQ + resRight
+                    return solve(left, mustEQ + resRight)
+                }
+                else if (monkey.Operator === '*') {
+                    // left * resRight === mustEQ
+                    // left === mustEQ / resRight
+                    return solve(left, mustEQ / resRight)
+                }
+                else if (monkey.Operator === '/') {
+                    // left / resRight === mustEQ
+                    // left === mustEQ * resRight
+                    return solve(left, mustEQ * resRight)
+                }
+            }
+        }
+        else {
+            //human is on the right
+
+            //calculate left
+            const resLeft = typeof left === 'number' ? left : result(left)
+            
+            if (monkey === root) {
+                if (mustEQ !== null) throw new Error()
+                //right must equal resLeft
+                return solve(right, resLeft)
+            }
+            else {
+                if (mustEQ === null) throw new Error()
+
+                if (monkey.Operator === '+') {
+                    // resLeft + right === mustEQ
+                    // right === mustEQ - resLeft
+                    return solve(right, mustEQ - resLeft)
+                }
+                else if (monkey.Operator === '-') {
+                    // resLeft - right === mustEQ
+                    // right === resLeft - mustEQ 
+                    return solve(right, resLeft - mustEQ)
+                }
+                else if (monkey.Operator === '*') {
+                    // resLeft * right === mustEQ
+                    // right === mustEQ / resLeft
+                    return solve(right, mustEQ / resLeft)
+                }
+                else if (monkey.Operator === '/') {
+                    // resLeft / right === mustEQ
+                    // resLeft / mustEQ === right
+                    return solve(right, resLeft / mustEQ)
+                }
+            }
+
+        }
+
+        throw new Error('shouldnt get here')
+
+    }
+
+    humanLeft(root) 
+
+    solve(root, null).Log()
+}
+
+export function Day20() {
+    const file = Data.toIntArray().map((val, i) => [val, i] as n2)
+
+    file.map(v => v[0]).Log()
+
+
+    for (let i = 0; i < file.length; i++) {
+        const fromPos = file.findIndex(v => v[1] === i)
+        const val = file[fromPos][0]
+
+        if (val > 0) {
+            let toPos = (fromPos + val) % file.length
+
+            if (fromPos < toPos) {
+                file.splice(toPos + 1, 0, [val, i])
+                file.splice(fromPos, 1)
+
+            }
+            else {
+                file.splice(toPos + 1, 0, [val, i])
+                file.splice(fromPos + 1, 1)
+            }
+        }
+        else if (val < 0) {
+            let toPos = (fromPos + val - 1 + 100 * file.length) % file.length
+
+            if (fromPos < toPos) {
+                file.splice(toPos + 1, 0, [val, i])
+                file.splice(fromPos, 1)
+
+            }
+            else {
+                file.splice(toPos + 1, 0, [val, i])
+                file.splice(fromPos + 1, 1)
+            }
+        }
+    }
+
+
+    const v0 = file.findIndex(v => v[0] === 0);
+
+    [   file[(v0 + 1000) % file.length][0],
+        file[(v0 + 2000) % file.length][0],
+        file[(v0 + 3000) % file.length][0]].Sum().Log()
+
+
+}
+export function Day20_2() {
+    //linked list time
+    const file = new BiLinkedList<n2>()
+    const count = Data.length
+    Data.toIntArray().forEach((f, i) => {
+        file.Push(new BiLinkedNode([f, i] as n2))
+    })
+
+    //circularify
+    file.Final!.Next = file.Head
+    file.Head!.Prev = file.Final
+
+    for (let i = 0; i < count; i++) {
+        let node!: BiLinkedNode<n2>;
+        file.ForEach(val => {
+            if (val.Value[1] === i) {
+                node = val
+                return true
+            }
+        }, count)
+        if (node === undefined) throw new Error()
+        const val = node.Value[0]
+
+        if (val === 0) continue
+
+        file.RemoveNode(node)
+
+        let destPrecNode = node
+
+        if (val > 0) {
+            for (let offset = 0; offset < val; offset++) {
+                destPrecNode = destPrecNode.Next!
+            }
+        }
+        else if (val < 0) {
+            for (let offset = 0; offset >= val; offset--) {
+                destPrecNode = destPrecNode.Prev!
+            }
+        }
+
+        node.Copy().InsertAfter(destPrecNode)
+
+        // file.Log(count)
+    }
+
+    const arr = file.toArray(count).map(a => a[0])
+    const v0 = arr.findIndex(v => v === 0);
+
+    [arr[(v0 + 1000) % count],
+     arr[(v0 + 2000) % count],
+     arr[(v0 + 3000) % count]].Sum().Log()
+}
+
+export function Day20_3() {
+    //linked list time
+    const file = new BiLinkedList<n2>()
+    const count = Data.length
+    Data.toIntArray().forEach((f, i) => {
+        file.Push(new BiLinkedNode([f, i] as n2))
+    })
+
+    //circularify
+    file.Final!.Next = file.Head
+    file.Head!.Prev = file.Final
+
+    for (let i = 0; i < count; i++) {
+        let node!: BiLinkedNode<n2>;
+        file.ForEach(val => {
+            if (val.Value[1] === i) {
+                node = val
+                return true
+            }
+        }, count)
+        if (node === undefined) throw new Error()
+        const val = node.Value[0]
+
+        if (val === 0) continue
+
+
+        if (val > 0) {
+            for (let offset = 0; offset < val; offset++) {
+                //swap values of node and node++
+                let v = node.Value
+                node.Value = node.Next!.Value
+                node.Next!.Value = v
+
+                node = node.Next!
+            }
+        }
+        else if (val < 0) {
+            for (let offset = 0; offset > val; offset--) {
+                //swap values of node and node--
+                let v = node.Value
+                node.Value = node.Prev!.Value
+                node.Prev!.Value = v
+
+                node = node.Prev!
+            }
+        }
+
+    }
+
+    const arr = file.toArray(count).map(a => a[0])
+    const v0 = arr.findIndex(v => v === 0);
+
+    [arr[(v0 + 1000) % count],
+    arr[(v0 + 2000) % count],
+    arr[(v0 + 3000) % count]].Sum().Log()
+}
+
+export function Day20_4() {
+    //linked list time
+    const file = new BiLinkedList<n2>()
+    const count = Data.length
+    Data.toIntArray().forEach((f, i) => {
+        file.Push(new BiLinkedNode([f * 811589153, i] as n2))
+    })
+
+    //circularify
+    file.Final!.Next = file.Head
+    file.Head!.Prev = file.Final
+
+    for (let q = 0; q < 10; q++) {
+        for (let i = 0; i < count; i++) {
+            let node!: BiLinkedNode<n2>;
+            file.ForEach(val => {
+                if (val.Value[1] === i) {
+                    node = val
+                    return true
+                }
+            }, count)
+            if (node === undefined) throw new Error()
+            const val = node.Value[0]
+
+
+            if (val === 0) continue
+            let vv = Math.abs(val) < count ? val : ((val < 0 ? -1 : 1) * Math.abs(val) % (count - 1))
+            if (vv === 0) continue
+
+
+            file.RemoveNode(node)
+
+            let destPrecNode = node
+
+            if (vv > 0) {
+                for (let offset = 0; offset < vv; offset++) {
+                    destPrecNode = destPrecNode.Next!
+                }
+            }
+            else if (vv < 0) {
+                for (let offset = 0; offset >= vv; offset--) {
+                    destPrecNode = destPrecNode.Prev!
+                }
+            }
+
+            node.Copy().InsertAfter(destPrecNode)
+
+            file.Log(count)
+        }
+    }
+
+    const arr = file.toArray(count).map(a => a[0])
+    const v0 = arr.findIndex(v => v === 0);
+
+    [arr[(v0 + 1000) % count],
+    arr[(v0 + 2000) % count],
+    arr[(v0 + 3000) % count]].Sum().Log()
+}
 
 export function Day19() {
     const blueprints = Data.map(l => l.toNumsArray().slice(1) as n6)

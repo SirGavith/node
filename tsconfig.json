@@ -71,5 +71,5 @@
   },
   "include": [
     "./src/**/*"
-, "Glib", "src/Computer"  ]
+, "Glib", "src/Computer", "solution.js"  ]
 }
