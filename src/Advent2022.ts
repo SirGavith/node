@@ -8,14 +8,470 @@ import * as Console from './Glib/Console'
 import { BigSet } from './Glib/BigSet'
 import { XYZ } from './Glib/XYZ'
 import { n1, n2, n3, n4, n5, n6, n7, n8, n9 } from './Glib/Array'
-import { BiLinkedList, BiLinkedNode, LinkedList } from './Glib/LinkedList'
-import { WhileExpression } from './Computer/Lexer'
+import { BiLinkedList, BiLinkedNode } from './Glib/LinkedList'
+import { Cx } from './Glib/Complex'
 
 const Data = Filer.ReadAllLines(UseExample ? '../../data/example.txt' : '../../data/input.txt'),
     DataFull = Filer.ReadFile(UseExample ? '../../data/example.txt' : '../../data/input.txt')
 
 export function Day22() {
-    
+    //all inclusive
+    const edgeSize = UseExample ? 4 : 50
+
+    const A = new XY
+    const B = new XY(edgeSize - 1, 0)
+    const C = new XY(0, edgeSize - 1)
+    const D = new XY(edgeSize - 1, edgeSize - 1)
+
+    const edges: {[key: string]: {
+        '0'?: [XY, XY],
+        '1'?: [XY, XY],
+        '2'?: [XY, XY],
+        '3'?: [XY, XY],
+        '4'?: [XY, XY],
+        '5'?: [XY, XY],
+        'dir': {
+            '1'?: Cx,
+            '-1'?: Cx,
+            'i'?: Cx,
+            '-i'?: Cx,
+        }
+    }} = UseExample ? {
+        '01': {
+            //between 1 and two
+            '0': [A, B],
+            '1': [B, A],
+            //up => down
+            'dir': {
+                'i': new Cx(0, -1),
+            }
+        },
+        '02': {
+            //between 1 and two
+            '0': [A, C],
+            '2': [A, B],
+            //left => down
+            //up => right
+            'dir': {
+                '-1': new Cx(0, -1) ,
+                'i': new Cx(1, 0),
+            }
+        },
+        '03': {
+            '0': [C, D],
+            '3': [A, B],
+            //down => down
+            //up => up
+            'dir': {
+                'i': new Cx(0, 1),
+                '-i': new Cx(0, -1),
+            }
+        },
+        '05': {
+            //between 1 and two
+            '0': [B, D],
+            '5': [D, B],
+            //right => left
+            'dir': {
+                '1': new Cx(-1, 0),
+            }
+        },
+        '12': {
+            '1': [B, D],
+            '2': [A, C],
+            //left => left
+            //right => right
+            'dir': {
+                '-1': new Cx(-1),
+                '1': new Cx(1),
+            }
+        },
+        '14': {
+            //between 1 and two
+            '1': [C, D],
+            '4': [D, C],
+            //down => up
+            'dir': {
+                '-i': new Cx(0, 1),
+            }
+        },
+        '15': {
+            //between 1 and two
+            '1': [A, C],
+            '5': [D, C],
+            //down => right
+            //left => up
+            'dir': {
+                '-i': new Cx(1, 0),
+                '-1': new Cx(0, 1),
+            }
+        },
+        '23': {
+            '2': [B, D],
+            '3': [A, C],
+            //left => left
+            //right => right
+            'dir': {
+                '-1': new Cx(-1),
+                '1': new Cx(1),
+            }
+        },
+        '24': {
+            //between 1 and two
+            '2': [C, D],
+            '4': [C, A],
+            //down => right
+            //left => up
+            'dir': {
+                '-i': new Cx(1, 0),
+                '-1': new Cx(0, 1),
+            }
+        },
+        '34': {
+            '3': [C, D],
+            '4': [A, B],
+            //down => down
+            //up => up
+            'dir': {
+                'i': new Cx(0, 1),
+                '-i': new Cx(0, -1),
+            }
+        },
+        '35': {
+            //between 1 and two
+            '3': [B, D],
+            '5': [B, A],
+            //right => down
+            //up => left
+            'dir': {
+                '1': new Cx(0, -1),
+                'i': new Cx(-1, 0),
+            }
+        },
+        '45': {
+            '4': [B, D],
+            '5': [A, C],
+            //left => left
+            //right => right
+            'dir': {
+                '-1': new Cx(-1),
+                '1': new Cx(1),
+            }
+        },
+    } : {
+        '01': {
+            '0': [A, B],
+            '1': [A, C],
+            'dir': {
+                'i': new Cx(1, 0),
+                '-1': new Cx(0, -1),
+            }
+        },
+        '02': {
+            '0': [A,C],
+            '2': [C,A],
+            'dir': {
+                '-1': new Cx(1),
+            }
+        },
+        '03': {
+            '0': [C,D],
+            '3': [A,B],
+            //down => down
+            //up => up
+            'dir': {
+                'i': new Cx(0, 1),
+                '-i': new Cx(0, -1),
+            }
+        },
+        '05': {
+            '0': [B,D],
+            '5': [A,C],
+            'dir': {
+                '1': new Cx(1, 0),
+                '-1': new Cx(-1, 0),
+            }
+        },
+        '12': {
+            '1': [A,B],
+            '2': [C,D],
+            'dir': {
+                'i': new Cx(0, 1),
+                '-i': new Cx(0, -1),
+            }
+        },
+        '14': {
+            '1': [B, D],
+            '4': [C, D],
+            'dir': {
+                '1': new Cx(0, 1),
+                '-i': new Cx(-1),
+            }
+        },
+        '15': {
+            '1': [C, D],
+            '5': [A, B],
+            'dir': {
+                'i': new Cx(0, 1),
+                '-i': new Cx(0, -1),
+            }
+        },
+        '23': {
+            '2': [A, B],
+            '3': [A, C],
+            'dir': {
+                'i': new Cx(1),
+                '-1': new Cx(0, -1),
+            }
+        },
+        '24': {
+            '2': [B, D],
+            '4': [A, C],
+            'dir': {
+                '1': new Cx(1, 0),
+                '-1': new Cx(-1),
+            }
+        },
+        '34': {
+            '3': [C, D],
+            '4': [A, B],
+            //down => down
+            //up => up
+            'dir': {
+                'i': new Cx(0, 1),
+                '-i': new Cx(0, -1),
+            }
+        },
+        '35': {
+            '3': [B, D],
+            '5': [C, D],
+            'dir': {
+                '1': new Cx(0, 1),
+                '-i': new Cx(-1, 0),
+            }
+        },
+        '45': {
+            '4': [B, D],
+            '5': [D, B],
+            'dir': {
+                '1': new Cx(-1),
+            }
+        },
+    }
+
+    const faceEdges = UseExample ? [
+        {
+            '1': 5,
+            '-1': 2,
+            'i': 1,
+            '-i': 3,
+        },
+        {
+            '1': 2,
+            '-1': 5,
+            'i': 0,
+            '-i': 4,
+        },
+        {
+            '1': 3,
+            '-1': 1,
+            'i': 0,
+            '-i': 4,
+        },
+        {
+            '1': 5,
+            '-1': 2,
+            'i': 0,
+            '-i': 4,
+        },
+        {
+            '1': 5,
+            '-1': 2,
+            'i': 3,
+            '-i': 1,
+        },
+        {
+            '1': 0,
+            '-1': 4,
+            'i': 3,
+            '-i': 1,
+        },
+    ] : [
+        {
+            '1': 5,
+            '-1': 2,
+            'i': 1,
+            '-i': 3,
+        },
+        {
+            '1': 4,
+            '-1': 0,
+            'i': 2,
+            '-i': 5,
+        },
+        {
+            '1': 4,
+            '-1': 0,
+            'i': 3,
+            '-i': 1,
+        },
+        {
+            '1': 5,
+            '-1': 2,
+            'i': 0,
+            '-i': 4,
+        },
+        {
+            '1': 5,
+            '-1': 2,
+            'i': 3,
+            '-i': 1,
+        },
+        {
+            '1': 4,
+            '-1': 0,
+            'i': 1,
+            '-i': 3,
+        },
+    ]
+
+    //all lines begin at same pos, but end different lengths
+    const instructions = Data.at(-1)!
+    const lines = Data.slice(0, -2).map(l => 
+        l.toArray().map(c => c === ' ' ? undefined : c === '.' ? false : true)
+    )
+    const arr = Array2D.fromArray(lines, new XY(lines.map(l => l.length).Max(), lines.length))
+
+    const faceXYs = UseExample ? [
+        new XY(8, 0),
+        new XY(0, 4),
+        new XY(4, 4),
+        new XY(8, 4),
+        new XY(8, 8),
+        new XY(12, 8),
+    ] : [
+        new XY(50, 0),
+        new XY(0, 150),
+        new XY(0, 100),
+        new XY(50, 50),
+        new XY(50, 100),
+        new XY(100, 0),
+    ]
+
+    const faces: Array2D<boolean>[] = faceXYs.map((xy0) => 
+        new Array2D<boolean>(new XY(edgeSize)).map((_, xy) => arr.get(xy0.plus(xy)))
+    )
+
+    const path = faces.map(f => f.Copy() as Array2D<boolean | string>)
+
+    let face = 0
+    let pos = new XY
+    let dir = new Cx(1, 0)
+    let i = 0
+    instructions.toNumsArray().forEach(n => {
+        //travel up to that many times
+        let dirXY = new XY(dir.Re, 0-dir.Im)
+
+        for (let j = 0; j < n; j++) {
+
+            path[face].set(pos, 'x')
+
+
+            let nextPos = pos.plus(dirXY)
+            let nextTile = faces[face].get(nextPos)
+
+            if (nextTile === true) {
+                break
+            }
+            else if (nextTile === false) {
+                pos = nextPos
+                continue
+            }
+            else if (nextTile === undefined) {
+                //find number of next face
+                const nextFace = faceEdges[face][dir.toString() as '1' | '-1' | 'i' | '-i']
+                if (nextFace === undefined) throw new Error('cannot find next face')
+                //find edge object of current edge
+                const edge = edges[[face, nextFace].Sort(Sorts.LeastFirst).join('')]
+                if (nextFace === undefined) throw new Error('cannot find edge')
+                //find the mappings of the two halves of the edge
+                const edgemap = edge[face.toString() as '0' | '1' | '2' | '3' | '4' | '5'],
+                    nextEdgemap = edge[nextFace.toString() as '0' | '1' | '2' | '3' | '4' | '5']
+                if (edgemap === undefined) throw new Error()
+                if (nextEdgemap === undefined) throw new Error()
+
+                //find out pos along current side of edge
+
+                let edgeCombos: XY[] = edgemap[1].Combinations(edgemap[0])
+                let nextEdgeCombos: XY[] = nextEdgemap[1].Combinations(nextEdgemap[0])
+                let reversed = false
+
+                //if current edge does left or up, reverse things
+                if (edgeCombos.length === 0) {
+                    edgeCombos = edgemap[0].Combinations(edgemap[1])
+                    reversed = !reversed
+                }
+                if (nextEdgeCombos.length === 0) {
+                    nextEdgeCombos = nextEdgemap[0].Combinations(nextEdgemap[1])
+                    reversed = !reversed
+                }
+
+                let tileI
+                edgeCombos.ForEach((xy, i) => {
+                    if (xy.EQ(pos)) {
+                        tileI = i
+                        return true
+                    }
+                })
+                if (tileI === undefined) throw new Error('tile not found in edge')
+
+                //find out pos along next side of edge
+                nextPos = nextEdgeCombos.at(reversed ? -1-tileI : tileI)!
+                
+                if (nextPos === undefined) throw new Error('cannot find next pos')
+
+                //check if next position is blocked
+                if (faces[nextFace].get(nextPos) === true) {
+                    break
+                }
+                console.log(`face ${face}`)
+                path[face].Log()
+                console.log(`to face ${nextFace}`)
+                console.log()
+
+
+                //set things
+                face = nextFace
+                pos = nextPos
+                const nextDir = edge['dir'][dir.toString() as keyof typeof edge.dir]
+                if (nextDir === undefined) throw new Error('cannot find next direction')
+                dir = nextDir
+                dirXY = new XY(dir.Re, 0 - dir.Im)
+            }
+        }
+
+        path[face].set(pos, 'X')
+
+        i += n.toString().length + 1
+        dir = (instructions.charAt(i - 1) === 'R' ? Cx.Ni : Cx.i).times(dir)
+
+    })
+    dir = dir.times(Cx.Ni)
+
+    console.log(`face ${face}`)
+    path[face].Log()
+    console.log(`done`)
+    console.log()
+
+    pos.Log()
+    pos.plusEQ(faceXYs[face])
+    pos.Log()
+    dir.Log()
+
+    const d = dir.Im === 0 ? 
+        (dir.Re === 1 ? 0 : 2) :
+        dir.Im === -1 ? 1 : 3
+    console.log(1000 * (pos.Y + 1) + 4 * (pos.X + 1) + d)
 }
 
 export function Day21() {

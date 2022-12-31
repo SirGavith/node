@@ -1,3 +1,5 @@
+import { XY } from "./XY"
+
 export class Cx {
     Re: number
     Im: number
@@ -30,13 +32,28 @@ export class Cx {
         return new Cx(this.Re.RoundFloating(), this.Im.RoundFloating())
     }
 
+    toXY(): XY {
+        return new XY(this.Re, this.Im)
+    }
+
+    toString(): string {
+        if (this.Re === 0 && this.Im === 1) return 'i'
+        if (this.Re === 0 && this.Im === -1) return '-i'
+
+        const re = this.Re.toString()
+
+        if (this.Im === 0)  return re
+        if (this.Im === 1)  return re + ' + i'
+        if (this.Im === -1) return re + ' - i'
+
+        if (this.Im > 0) return re + ' + ' + this.Im.toString() + 'i'
+        if (this.Im < 0) return re + ' - ' + (0-this.Im).toString() + 'i'
+
+        throw new Error('shouldnt get here')
+    }
+
     Log(): Cx {
-        console.log(this.Re + 
-            (this.Im > 1 ? (' + ' + Math.abs(this.Im) + 'i') :
-            this.Im == 1 ? ' + i' :
-            this.Im == 0 ? '' :
-                    ' - ' + Math.abs(this.Im)
-            ))
+        console.log(this.toString())
         return this
     }
 
@@ -49,5 +66,7 @@ export class Cx {
     }
 
     static get One() { return new Cx(1, 0) }
+    static get NOne() { return new Cx(-1, 0) }
     static get i() { return new Cx(0, 1) }
+    static get Ni() { return new Cx(0, -1) }
 }

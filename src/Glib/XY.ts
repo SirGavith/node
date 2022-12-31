@@ -1,3 +1,5 @@
+import { Cx } from "./Complex"
+
 type nXY = number | XY
 
 export class XY {
@@ -24,28 +26,28 @@ export class XY {
         const xy = XY.parseInput(n, n2)
         return new XY(this.X + xy.X, this.Y + xy.Y)
     }
-    plusEQ(n: nXY, n2?: number) { return this.set(this.plus(n, n2)) }
+    plusEQ(n: nXY, n2?: number) { this.set(this.plus(n, n2)) }
 
     minus(n: nXY, n2?: number) {
         const xy = XY.parseInput(n, n2)
         return new XY(this.X - xy.X, this.Y - xy.Y)
     }
-    minusEQ(n: nXY, n2?: number) { return this.set(this.minus(n, n2)) }
+    minusEQ(n: nXY, n2?: number) { this.set(this.minus(n, n2)) }
     times(n: nXY, n2?: number) {
         const xy = XY.parseInput(n, n2)
         return new XY(this.X * xy.X, this.Y * xy.Y)
     }
-    timesEQ(n: nXY, n2?: number) { return this.set(this.times(n, n2)) }
+    timesEQ(n: nXY, n2?: number) { this.set(this.times(n, n2)) }
     div(n: nXY, n2?: number) {
         const xy = XY.parseInput(n, n2)
         return new XY(this.X / xy.X, this.Y / xy.Y)
     }
-    divEQ(n: nXY, n2?: number) { return this.set(this.div(n, n2)) }
+    divEQ(n: nXY, n2?: number) { this.set(this.div(n, n2)) }
     mod(n: nXY, n2?: number) {
         const xy = XY.parseInput(n, n2)
         return new XY(this.X % xy.X, this.Y % xy.Y)
     }
-    modEQ(n: nXY, n2?: number) { return this.set(this.mod(n, n2)) }
+    modEQ(n: nXY, n2?: number) { this.set(this.mod(n, n2)) }
 
 
     EQ(xy: XY) { return xy.X === this.X && xy.Y === this.Y }
@@ -80,6 +82,7 @@ export class XY {
 
     toArray() { return [this.X, this.Y] }
     toString() { return `${this.X},${this.Y}` }
+    toCx() { return new Cx(this.X, this.Y) }
     Copy() { return new XY(this.X, this.Y) }
 
     foreachCombination(lambda: (xy: XY) => void, startXY = new XY) {
@@ -88,19 +91,28 @@ export class XY {
                 lambda(new XY(x, y))
     }
 
-    CountCombinations(lambda: (xy: XY) => boolean, startXY = new XY) {
+    CountCombinations(lambda: (xy: XY) => boolean, startXY?: XY) {
         let count = 0
         this.foreachCombination(xy => {
             if (lambda(xy)) count++
-        }, startXY)
+        }, startXY ?? new XY)
         return count
     }
 
-    Combinations() {
+    Combinations(startXY?: XY) {
         const combos: XY[] = []
-        this.foreachCombination(xy => combos.push(xy))
+        this.foreachCombination(xy => combos.push(xy), startXY)
         return combos
     }
+    //does combinations either way
+    static Combinations(a: XY, b: XY): XY[] {
+        const aa = a.Combinations(b)
+        const bb = b.Combinations(a)
+        if (aa.length === 0) return bb
+        if (bb.length === 0) return aa
+        throw new Error('both got combos?')
+    }
+
     // Does not include this
     Neighbours(includeDiags = false) {
         return includeDiags ? [
@@ -256,13 +268,13 @@ export class Array2D<T> {
         // console.log(this)
 
         console.log('[')
-        this.Array.forEachReversed((row, i) => {
+        this.Array.forEach((row, i) => {
             console.log('| ' + 
-                i?.toString().padStart(5) + ' ' +
+                // i?.toString().padStart(5) + ' ' +
                 row.map(v => (
-                    v === undefined ? '.' :
+                    v === undefined ? ' ' :
                     v === true ? '#' :
-                    v === false ? 'o' :
+                    v === false ? '.' :
                     typeof v === "number" && v === Infinity ? '∞' : String(v)
                     
                     ).padStart(1)
@@ -333,11 +345,11 @@ export class Array2D<T> {
         return arr
     }
 
-    static fromArray<T>(arr: T[][]) {
-        if (arr.some(row => row.length !== arr[0].length))
+    static fromArray<T>(arr: T[][], size?: XY) {
+        if (size === undefined && arr.some(row => row.length !== arr[0].length))
             throw new RangeError('Array must be rectangular')
 
-        const out = new Array2D<T>(new XY(arr[0].length, arr.length))
+        const out = new Array2D<T>(size ?? new XY(arr[0].length, arr.length))
         arr.forEach((row, y) => {
             row.forEach((tile, x) => {
                 out.set(new XY(x, y), tile)
