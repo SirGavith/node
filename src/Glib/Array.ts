@@ -18,6 +18,7 @@ interface Array<T> {
 
     Intersect(arr: T[]): T[]
     Uniques(): T[]
+    Duplicates(): T[]
     IsUnique(): boolean
     MostCommon(): T
     LeastCommon(): T
@@ -171,6 +172,9 @@ Array.prototype.LeastCommon = function() {
 }
 Array.prototype.Uniques = function () { //isEQ: (a: T, b: T) => boolean = (a, b) => a === b
     return this.filter((value, i) => this.indexOf(value) === i)
+}
+Array.prototype.Duplicates = function () { //isEQ: (a: T, b: T) => boolean = (a, b) => a === b
+    return this.filter((value, i) => this.indexOf(value) !== i)
 }
 Array.prototype.IsUnique = function() {
     return this.Uniques().length == this.length

@@ -79,6 +79,7 @@ export class XY {
     get GreatestAbs() { return Math.abs(this.X) < Math.abs(this.Y) ? this.Y : this.X }
     get Norm() { return Math.sqrt(this.X ** 2 + this.Y ** 2) }
     get TaxicabNorm() { return Math.abs(this.X) + Math.abs(this.Y) }
+    get Area() { return this.X * this.Y}
 
     toArray() { return [this.X, this.Y] }
     toString() { return `${this.X},${this.Y}` }
@@ -157,7 +158,7 @@ export class XY {
     }
 
     static fromString(s: string) {
-        return new XY(...s.split(', ').toIntArray() as [number, number])
+        return new XY(...s.toIntList(10, ',') as [number, number])
     }
 
     static fromTuple(t: [number, number]) {
@@ -166,6 +167,11 @@ export class XY {
 
     static Zero = new XY
     static One = new XY(1)
+
+    static Up =     new XY(0,  1)
+    static Down =   new XY(0, -1)
+    static Right =  new XY( 1, 0)
+    static Left =   new XY(-1, 0)
 
     Log() {
         console.log('XY:', this.X, this.Y)
@@ -176,7 +182,7 @@ export class XY {
 export class Array2D<T> {
     Array: (T | undefined)[][] = []
 
-    constructor(public Size: XY, fillValue: T | undefined = undefined) {
+    constructor(public Size: XY, fillValue: T | undefined = undefined, public Checked = false) {
         for (let i = 0; i < Size.Y; i++)
             this.Array.push(Array(Size.X).fill(fillValue))
     }
@@ -201,6 +207,7 @@ export class Array2D<T> {
     }
 
     set(xy:XY, value: T | undefined) {
+        if (this.Checked && !xy.WithinArea(XY.Zero, this.Size.minus(1))) throw new Error('Array set out of bounds')
         this.Array[xy.Y][xy.X] = value
         this.cols = []
     }

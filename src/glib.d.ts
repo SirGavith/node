@@ -13,6 +13,7 @@ interface Array<T> {
     Reduce<TT>(action: (prev: TT, val: T, index: number, arr: T[]) => TT | [TT, boolean], start: TT): TT
     Intersect(arr: T[]): T[]
     Uniques(): T[]
+    Duplicates(): T[]
     IsUnique(): boolean
     MostCommon(): T
     LeastCommon(): T

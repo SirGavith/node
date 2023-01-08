@@ -14,6 +14,200 @@ import { Cx } from './Glib/Complex'
 const Data = Filer.ReadAllLines(UseExample ? '../../data/example.txt' : '../../data/input.txt'),
     DataFull = Filer.ReadFile(UseExample ? '../../data/example.txt' : '../../data/input.txt')
 
+export function Day24() {
+    const size = new XY(Data[0].length, Data.length).minus(2)
+    const dest = size.minus(1)
+    //get to bottom right, always just add one
+    //go for dijkstras bfs
+    
+    const blizzards: Array<[XY, XY]>[] = [[]] //direction, pos
+
+    Data.slice(1, -1).forEach((l, y) => {
+        l.slice(1, -1).forEach((c, x) => {
+            let dir: XY | undefined = undefined
+            if      (c === 'v') dir = XY.Up
+            else if (c === '>') dir = XY.Right
+            else if (c === '^') dir = XY.Down
+            else if (c === '<') dir = XY.Left
+            else return
+            blizzards[0].push([dir, new XY(x, y)])
+        })
+    })
+
+    const genBlizzards = () => {
+        blizzards.push(blizzards.at(-1)!.map(([dir, pos]) => {
+            let nPos = pos.plus(dir).plus(size).mod(size)
+            return [dir, nPos]
+        }))
+    }
+
+    
+    
+
+    const pathTo = (from: XY, to: XY, startTime: number) => {
+        const times: Array2D<number>[] = [new Array2D(size, 99999)] //indexed by time
+        const prevs: Array2D<XY>[] = [new Array2D(size)] //indexed by time
+
+        const Q: [XY, number][] = [[from, startTime]] // pos, time
+
+        const visited = new Set<string>()
+
+        for (let i = 0; Q.length > 0; i++) {
+            const [pos, time] = Q.shift()!
+
+            const key = pos.toString() + ' ' + time.toString()
+            if (visited.has(key)) continue
+            visited.add(key)
+
+            if (pos.EQ(to)) {
+                //done
+                return time - startTime
+            }
+
+            if (times[time + 1] === undefined) {
+                times[time + 1] = new Array2D<number>(size, 99999)
+                prevs[time + 1] = new Array2D(size)
+            }
+
+            if (blizzards[time + 1] === undefined) genBlizzards()
+            const nblizzards = blizzards[time + 1]
+
+            //consider staying if there isnt a blizzard
+            if (nblizzards.find(b => b[1].EQ(pos)) === undefined) {
+                if (time + 1 < times[time + 1].get(pos)!) {
+                    times[time + 1].set(pos, time + 1)
+                    prevs[time + 1].set(pos, pos)
+                }
+                Q.push([pos, time + 1])
+            }
+
+            pos.Neighbours().forEach(adj => {
+                if (adj.IsGreaterEQBoth(XY.Zero) &&
+                        adj.IsLessBoth(size) &&
+                        nblizzards.find(b => b[1].EQ(adj)) === undefined) {
+
+                    if (time + 1 < times[time + 1].get(adj)!) {
+                        times[time + 1].set(adj, time + 1)
+                        prevs[time + 1].set(adj, pos)
+                    }
+                    Q.push([adj, time + 1])
+                }
+            })
+        }
+        throw new Error()
+    }
+    let t = 0
+    t += pathTo(new XY(0, -1), dest, t)
+    t++
+    t.Log()
+    genBlizzards()
+    t += pathTo(dest.plus(0, 1), XY.Zero, t)
+    t++
+    t.Log()
+    genBlizzards()
+    t += pathTo(new XY(0, -1), dest, t)
+    t++
+    t.Log()
+
+    // const path: XY[] = []
+
+    // const rec = (pos: XY, tt: number) => {
+    //     path.unshift(pos)
+    //     const p = prevs[tt].get(pos)
+    //     if (p !== undefined) rec(p, tt - 1)
+    // }
+
+    // rec(dest, t)
+
+
+    // for (let i = 0; i <= t; i++) {
+    //     const a = new Array2D(size).map((_, xy) => {
+    //         const bCount = blizzards[i].Count(b => b[1].EQ(xy))
+    //         if (bCount > 1) return bCount.toString()
+    //         if (bCount > 0) {
+    //             const b = blizzards[i][blizzards[i].findIndex(b => b[1].EQ(xy))]
+    //             if (b[0] === XY.Up) return 'v'
+    //             if (b[0] === XY.Right) return '>'
+    //             if (b[0] === XY.Left) return '<'
+    //             if (b[0] === XY.Down) return '^'
+    //         }
+    //         return '.'
+    //     })
+    //     // if (i > 0) a.set(path[i], 'E')
+
+    //     a.Log()
+    // }
+
+    // console.log(t + 1)
+
+
+}
+
+export function Day23() {
+    const dataSize = new XY(Data[0].length, Data[1].length)
+    const arr = new Array2D(dataSize.times(3), false, true)
+    Array2D.fromArray(Data.map(l => l.toArray().map(c => c === '.' ? false : true))).forEach((v, xy) => arr.set(xy.plus(dataSize), v))
+    arr.Log()
+
+    const options = [
+        [new XY(-1,-1), new XY(0,  -1), new XY(1,-1)], // north
+        [new XY(-1, 1), new XY(0,  1), new XY(1,  1)], // south
+        [new XY(-1,-1), new XY(-1, 0), new XY(-1, 1)], // west
+        [new XY(1, -1), new XY(1,  0), new XY(1,  1)], // east
+    ]
+
+    for (let round = 1; ; round++) {
+        const elves: [XY, XY][] = [] //elf, proposedPos
+
+        arr.Entries().filter(([_, v]) => v === true).forEach(([elf]) => {
+            if (elf.Neighbours(true).find(nxy => arr.get(nxy) === true) === undefined) return
+            options.ForEach(o => {
+                if (o.map(xy => xy.plus(elf)).find(nxy => arr.get(nxy) === true) === undefined) {
+                    //can move in dir
+                    elves.push([elf, elf.plus(o[1])])
+                    return true
+                }
+            })
+        })
+
+        const hits = elves.map(e => e[1].toString()).Duplicates().map(d => XY.fromString(d))
+        
+        elves.forEach(([from, to]) => {
+            if (hits.find(e => e.EQ(to)) === undefined) {
+                arr.set(from, false)
+                arr.set(to, true)
+            }
+        })
+
+        if (elves.length === 0) {
+            arr.Log()
+            console.log('no elves moved on round', round)
+            break
+        }
+
+        if (round % 100 === 0) {
+            console.log(round)
+            arr.Log()
+        }
+
+        options.push(options.shift()!)
+    }
+
+    const min = arr.Size.div(2)
+    const max = arr.Size.div(2)
+
+    const elves = arr.Entries().filter(([_, v]) => v === true)
+    elves.forEach(([elf]) => {
+        if (elf.X < min.X) min.X = elf.X
+        if (elf.Y < min.Y) min.Y = elf.Y
+        if (elf.X > max.X) max.X = elf.X
+        if (elf.Y > max.Y) max.Y = elf.Y
+    })
+
+    console.log(max.minus(min).plus(1).Area - elves.length)
+
+}
+
 export function Day22() {
     //all inclusive
     const edgeSize = UseExample ? 4 : 50

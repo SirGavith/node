@@ -22,7 +22,7 @@ String.prototype.forEach = function(lambda: (val: string, index: number) => void
     this.toArray().forEach((v, i) => lambda(v, i))
 }
 String.prototype.toIntList = function(radix?: number, delim = '\n') {
-    return this.split(delim).map(n => parseInt(n, radix))
+    return this.split(delim).map(n => parseInt(n.trim(), radix))
 }
 String.prototype.toFloatList = function(delim = '\n') {
     return this.split(delim).map(n => parseFloat(n))
