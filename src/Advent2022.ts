@@ -14,6 +14,69 @@ import { Cx } from './Glib/Complex'
 const Data = Filer.ReadAllLines(UseExample ? '../../data/example.txt' : '../../data/input.txt'),
     DataFull = Filer.ReadFile(UseExample ? '../../data/example.txt' : '../../data/input.txt')
 
+export function Day25() {
+    const val = (snafu: string[]) => 
+        snafu.map((char, i, arr) => {
+            const placeValue = 5 ** (arr.length - i - 1)
+            const digitVal = char === '2' ? 2 :
+                            char === '1' ? 1 :
+                            char === '0' ? 0 :
+                            char === '-' ? -1 :
+                            char === '=' ? -2 : undefined
+            if (digitVal === undefined) throw new Error
+            return placeValue * digitVal
+        }).Sum()
+    
+
+    const decimal = Data.map(e => val(e.toArray())).Sum().Log()
+
+    //start with a number too big, all 2s
+    let outLen = (Math.log2(decimal) / Math.log2(5)).Ceil().Log()
+    let out = GArray.Range(0, outLen).map(_ => '2')
+    if (val(out) < decimal) {
+        out.push('2')
+        outLen++
+    }
+    let outVal = val(out)
+
+
+    for(let i = 0; i < outLen; i++) {
+        if (val(out) < decimal) throw new Error ('bad')
+
+        out.Log()
+        const p = out.Copy()
+        while(true) {
+            //try decrimenting char
+            if (p[i] === '=') break
+
+            p[i] = p[i] === '2' ? '1' :
+                   p[i] === '1' ? '0' :
+                   p[i] === '0' ? '-' :
+                        '='
+
+            const pVal = val(p)
+
+            if (pVal >= decimal) {
+                out = p.Copy()
+                outVal = pVal
+                if (decimal === outVal) {
+                    break
+                }
+            }
+            else {
+                //less, wrong
+                break
+            }
+        }
+        if (decimal === outVal) break
+    }
+
+    out.Log()
+    outVal.Log()
+
+    out.join('').Log()
+}
+
 export function Day24() {
     const size = new XY(Data[0].length, Data.length).minus(2)
     const dest = size.minus(1)
@@ -40,9 +103,6 @@ export function Day24() {
             return [dir, nPos]
         }))
     }
-
-    
-    
 
     const pathTo = (from: XY, to: XY, startTime: number) => {
         const times: Array2D<number>[] = [new Array2D(size, 99999)] //indexed by time
