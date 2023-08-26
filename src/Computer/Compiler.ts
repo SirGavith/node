@@ -1,9 +1,8 @@
-import { Word, instructionsMU0, Emu6502 } from './Emulator'
+import { Word, instructionsMU0 } from './Emulator'
 import { Expression, ExpressionTypes, Lexer, OperationExpression, Operators, VariableExpression } from './Lexer';
 import { CustomError } from '../Glib/Error';
 
 export class CompilerError extends CustomError { constructor(...message: any[]) { super(message); this.name = this.constructor.name} }
-export class AssemblerError extends CustomError { constructor(...message: any[]) { super(message); this.name = this.constructor.name} }
 
 function PreAssemble(c: string) {
     const code = c.SplitLines().filter(l => l.RegexTest(/\s*/)).map(l => l.trim())
@@ -59,7 +58,7 @@ function Assemble(assembly: string[]) {
             //literal
             return new Word(16, spl[0].toInt())
         }
-        else throw new AssemblerError(`Could not understand line '${line}'`)
+        else throw new Error(`Could not understand line '${line}'`)
     })
     bytecode.map(w => w.toString())
     return bytecode
@@ -68,7 +67,7 @@ function Assemble(assembly: string[]) {
 // const assembly = PreAssemble(`
 //     alloc var1 = 0x4
 //     alloc var2 = 0x1
-    
+
 //     @start LDA var1
 //     SUB var2
 //     STO var1
@@ -304,7 +303,6 @@ export function CompilerMU1(exp: Expression): string[/** assembly */] {
 //     a--;
 // };
 // b += a;
-
 // while (b > 0) {
 //     b--;
 // };
@@ -314,14 +312,12 @@ export function CompilerMU1(exp: Expression): string[/** assembly */] {
 // let: x;
 // (x + 2) * (3-5)`)
 
-const c = Lexer(`let:a=5;a++;`)
-c.Log()
 
 
 
-const e = new Emu6502
-e.LoadROMfromAssembly(CompilerMU1(c).Log())
+// const e = new Emu6502
+// e.LoadROMfromAssembly(CompilerMU1(c).Log())
 
-e.Debug = true
+// e.Debug = true
 
-e.Execute()
+// e.Execute()

@@ -280,8 +280,8 @@ export class Array2D<T> {
                 // i?.toString().padStart(5) + ' ' +
                 row.map(v => (
                     v === undefined ? ' ' :
-                    v === true ? '#' :
-                    v === false ? '.' :
+                    v as unknown as boolean === true ? '#' :
+                    v as unknown as boolean === false ? '.' :
                     typeof v === "number" && v === Infinity ? '∞' : String(v)
                     
                     ).padStart(1)
@@ -340,7 +340,7 @@ export class Array2D<T> {
 
     SuperimposeOverlap(arr: Array2D<T>, offset: XY) {
         return arr.some((val, xy) =>
-            val === true && val === this.get(xy.plus(offset))
+            val as unknown as boolean === true && val === this.get(xy.plus(offset))
         )
     }
 

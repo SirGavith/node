@@ -44,6 +44,13 @@ export class CompoundExpression extends ExpressionBase {
     Simplify() {
         return this.Expressions.length === 1 ? this.Expressions[0] : this
     }
+    // override Log(indent = 0) {
+    //     console.log(' '.repeat(indent) + '[')
+    //     this.Expressions.forEach(e => {
+    //         e.Log(indent + 1)
+    //     })
+    //     console.log(' '.repeat(indent) + ']')
+    // }
 }
 export class DeclarationExpression extends ExpressionBase {
     override Type: ExpressionTypes.Declaration = ExpressionTypes.Declaration
@@ -200,7 +207,8 @@ function tokenizeExpr(expr: string, identifiers: string[]) {
     }
     else {
         let parenDepth = 0
-        main_loop: for (const [char, i] of expr.toArray().WithIndices()) {
+        main_loop: 
+        for (const [char, i] of expr.toArray().WithIndices()) {
             if (char === '(') parenDepth++
             else if (char === ')') parenDepth--
             else if (parenDepth !== 0) continue
@@ -222,7 +230,7 @@ function tokenizeExpr(expr: string, identifiers: string[]) {
                 ['/=', Operators.DivEQ],
                 ['/', Operators.Div],
                 ['%=', Operators.ModEQ],
-                ['&', Operators.Mod],
+                ['%', Operators.Mod],
                 ['=', Operators.SetEquals],
                 ['>=', Operators.GreaterThanEQ],
                 ['>', Operators.GreaterThan],

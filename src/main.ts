@@ -1,10 +1,18 @@
 import { Glib } from './Glib/main'
 Glib.init();
-import * as Advent2022 from './Advent2022'
+// import { Lexer } from './Computer/Lexer';
+// import { Digits } from './digits';
 
-const startTime = process.hrtime();
+import * as strava from './strava';
+strava.main();
 
-Advent2022.Day25()
+// findRecentTCXes('C:/Users/gavin/Downloads/unzipped/Takeout/Fit/Activities')
 
-const time = process.hrtime(startTime)
-console.log(`Ran in ${time[0]}s ${time[1] / 10 ** 6}ms`)
+// import * as Advent2022 from './Advent2022'
+
+// const startTime = process.hrtime();
+
+// Advent2022.Day25()
+
+// const time = process.hrtime(startTime)
+// console.log(`Ran in ${time[0]}s ${time[1] / 10 ** 6}ms`)

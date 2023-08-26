@@ -6,15 +6,15 @@ export class Filer {
         return Filer.ReadAllLines(localpath).join('\n')
     }
     static ReadAllLines(localpath: string): string[] {
-        let lines = (fs.readFileSync(path.join(__dirname, localpath), 'utf8') as string)
+        let lines = (fs.readFileSync(localpath, 'utf8') as string)
             .replaceAll('\r', '')
             .SplitLines()
             .filter(l => !l.startsWith('//'))
             // .map(l => l.trim())
-        if (lines.at(-1) == '') lines = lines.slice(0, -1)
+        if (lines.at(-1) === '') lines = lines.slice(0, -1)
         return lines
     }
-    static WriteFile(localpath: string, data: string) {
+    static WriteFile(localpath: string, data: string | Uint8Array) {
         fs.writeFile(localpath, data, err => { if (err) console.log(err) })
     }
 }
