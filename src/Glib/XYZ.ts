@@ -32,16 +32,18 @@ export class XYZ {
         return new XYZ(this.X - xy.X, this.Y - xy.Y, this.Z - xy.Z)
     }
     minusEQ(n: nXYZ, n2?: number, n3?: number) { return this.set(this.minus(n, n2, n3)) }
-    times(n: nXYZ, n2?: number, n3?: number) {
+
+    compTimes(n: nXYZ, n2?: number, n3?: number) {
         const xy = XYZ.parseInput(n, n2, n3)
         return new XYZ(this.X * xy.X, this.Y * xy.Y, this.Z * xy.Z)
     }
-    timesEQ(n: nXYZ, n2?: number, n3?: number) { return this.set(this.times(n, n2, n3)) }
-    div(n: nXYZ, n2?: number, n3?: number) {
+    compTimesEQ(n: nXYZ, n2?: number, n3?: number) { return this.set(this.compTimes(n, n2, n3)) }
+    compDiv(n: nXYZ, n2?: number, n3?: number) {
         const xy = XYZ.parseInput(n, n2, n3)
         return new XYZ(this.X / xy.X, this.Y / xy.Y, this.Z / xy.Z)
     }
-    divEQ(n: nXYZ, n2?: number, n3?: number) { return this.set(this.div(n, n2, n3)) }
+    compDivEQ(n: nXYZ, n2?: number, n3?: number) { return this.set(this.compDiv(n, n2, n3)) }
+
 
     EQ(xyz: XYZ) { return xyz.X === this.X && xyz.Y === this.Y && this.Z === xyz.Z }
 

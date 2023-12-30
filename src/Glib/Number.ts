@@ -1,4 +1,7 @@
 interface Number {
+    plus(n: number): number
+    minus(n: number): number
+
     IsInteger(): boolean
     /** @returns An array of the digits of the number */
     IntDigits(): number[]
@@ -12,6 +15,14 @@ interface Number {
     Log(): number
 }
 type numericals = number | bigint
+Number.prototype.plus = function (n: number) {
+    return this.valueOf() + n
+}
+Number.prototype.minus = function (n: number) {
+    return this.valueOf() - n
+}
+
+
 Number.prototype.IsInteger = function() {
     return this.valueOf() % 1 == 0
 }
@@ -19,7 +30,7 @@ Number.prototype.IntDigits = function() {
     return [...this.toString()].map(n => parseInt(n))
 }
 Number.prototype.InRangeEq = function(v1, v2) {
-    return this >= v1 && this <= v2   
+    return this.valueOf() >= v1 && this.valueOf() <= v2   
 }
 Number.prototype.IsEven = function() {
     return this.valueOf() % 2 === 0

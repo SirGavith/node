@@ -187,7 +187,7 @@ export class Array2D<T> {
             this.Array.push(Array(Size.X).fill(fillValue))
     }
 
-    get(xy:XY) {
+    get(xy: XY) {
         return this.Array[xy.Y] ?
             this.Array[xy.Y][xy.X] :
             undefined

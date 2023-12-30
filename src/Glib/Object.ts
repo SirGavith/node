@@ -3,7 +3,7 @@ interface Object {
     Values(): any[]
     Keys(): string[]
     Entries(): [string, any][]
-    filter(filter: (key: string, val: any) => boolean): {}
+    Filter(filter: (key: string, val: any) => boolean): {}
     forEach(lambda: (key: string, val: any) => void): void
     Copy(): {}
     IncrementOrCreate (key: string, value?: number | bigint): void
@@ -33,7 +33,7 @@ Object.prototype.IncrementOrCreate = function(key: string, value: number | bigin
     if (t[key]) (t[key] as number) += value as number //these assertions are lies
     else t[key] = value
 }
-Object.prototype.filter = function(filter: (key: string, val: any) => boolean) {
+Object.prototype.Filter = function(filter: (key: string, val: any) => boolean) {
     const out: {[key: string]: any} = {}
     for (const [key, val] of this.Entries()) {
         if (filter(key, val)) out[key] = val

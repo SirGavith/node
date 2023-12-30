@@ -32,7 +32,7 @@ function HeartRateIntervalIsOne(tcx: string): boolean {
     //find second and third 
     const matches = [...tcx.matchAll(/<Time>....-..-..T..:(..):.*<\/Time>\n\s*<HeartRateBpm>/g)]
     if (matches.length < 3) return false
-    if (matches[2][1].toInt() - matches[1][1].toInt() === 1) return true
+    if (Math.abs(matches[2][1].toInt() - matches[1][1].toInt()) <= 1) return true
     return false
 }
 
@@ -46,15 +46,17 @@ export async function main() {
         return;
     }
 
+    console.log('Unzipping', mostRecentZip, '. . .')
     const destinationPath = path.join(downloadsFolder, 'unzipped');
-
     try {
         await fs.promises.mkdir(destinationPath, { recursive: true });
         await unzipFile(mostRecentZip, destinationPath);
-        console.log('File unzipped successfully:', mostRecentZip);
     } catch (error) {
         console.error('Error unzipping file:', error);
+        return
     }
+    console.log('File unzipped successfully:', mostRecentZip);
+
     const directory = 'C:/Users/gavin/Downloads/unzipped/Takeout/Fit/Activities'
     const files = await fs.promises.readdir(directory);
     const lastReadTimestampPath = path.join(__dirname, '../data/lastReadGPX.txt')
