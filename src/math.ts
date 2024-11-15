@@ -146,5 +146,19 @@ export function transformRadix2(real: Array<number> | Float64Array, imag: Array<
         return result;
     }
 
-    // return [real, imag] as [number[], number[]]
+}
+
+export  function isSquare(n: bigint): boolean {
+    if (n < 0n) return false;
+    if (n < 2n) return true;
+
+    let x = n / 2n;
+    let y = (x + n / x) / 2n;
+
+    while (y < x) {
+        x = y;
+        y = (x + n / x) / 2n;
+    }
+
+    return x * x === n;
 }

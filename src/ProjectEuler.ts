@@ -41,13 +41,39 @@ class GRange<T extends numericals> {
     }
 }
 
-class ProjectEuler {
+export class ProjectEuler {
     static P16() {
         console.log(2n.Exp(1000n).SumDigits())
     }
 
     static P20() {
         console.log(100n.Factorial().SumDigits())
+    }
+
+    static P21() {
+        // sum of divisors
+        const d = (n: number) => {
+            let sum = 1
+            for (let x = 2; x < Math.sqrt(n); x++) {
+                if (n % x == 0) {
+                    sum += x + n / x
+                }
+            }
+            return sum
+        }
+
+        const map: {[key: number]: number} = {}
+        for (let i = 1; i < 10000; i++) {
+            map[i] = d(i)
+        }
+
+        let s = 0
+
+        for (let i = 1; i < 10000; i++) {
+            if (d(d(i)) == i && d(i) != i) s += i.Log()
+        }
+
+        console.log(s)
     }
 
     static P25() {
@@ -207,4 +233,4 @@ class ProjectEuler {
     }
 }
 
-ProjectEuler.P35()
+// ProjectEuler.P35()

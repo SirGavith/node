@@ -11,6 +11,9 @@ export class Vector {
     mag(): number {
         return Math.sqrt(this.Values.map(v => v * v).Sum())
     }
+    mag2(): number {
+        return this.Values.map(v => v * v).Sum()
+    }
     unit(): Vector {
         return this.div(this.mag())
     }
@@ -66,6 +69,10 @@ export class Vector {
     proj(onto: Vector): Vector {
         return onto.times(this.dot(onto) / (onto.mag() ** 2))
     }
+
+    get i() { return this.Values[0] }
+    get j() { return this.Values[1] }
+    get k() { return this.Values[2] }
 
     static i = new Vector(1, 0, 0)
     static j = new Vector(0, 1, 0)
