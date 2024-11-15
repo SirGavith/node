@@ -23,7 +23,6 @@ export class Graph {
     }
 }
 
-//Returns min cut of graph
 export function StoerWagnerMinCut(G: Graph) {
     let minCut = Number.MAX_VALUE
 
@@ -37,19 +36,20 @@ export function StoerWagnerMinCut(G: Graph) {
 function MinCutPhase(G: Graph): number {
     const supernode = new Set([G.getVertex()!])
     const supernodeNeighbors: Map<Vertex, number> = new Map(G.getVertex()!.Adjacents)
-
+    
     let mostConnectedVertex: Vertex = supernodeNeighbors.entries().next().value![0]
-
+    
+    // expand supernode until it contains all but one of the nodes
     while (supernodeNeighbors.size > 1) {
-        //add most-connected vertex to A
+        //add most-connected vertex to supernode
+
+        // these two lines would be replaced by a priority queue pop:
         mostConnectedVertex = GetMostConnectedVertex(supernodeNeighbors)
-
         supernodeNeighbors.delete(mostConnectedVertex)
-        supernode.add(mostConnectedVertex)
 
+        supernode.add(mostConnectedVertex)
         for (const [v, w] of mostConnectedVertex.Adjacents) {
             if (supernode.has(v)) continue
-
             supernodeNeighbors.set(v,
                 (supernodeNeighbors.get(v) ?? 0) + w)
         }
@@ -71,10 +71,8 @@ function MinCutPhase(G: Graph): number {
     G.Vertices.delete(t)
 
     const sName = s.Name
-    
     s.Name += t.Name
-    if (G.Size > 1) 
-        console.log(`Merging ${Cyan + sName + Reset} with ${Cyan + t.Name + Reset} =>`, Cyan, [...G.Vertices.values()].map(v => v.Name).join(' '), Reset)
+    if (G.Size > 1) console.log(`Merging ${Cyan + sName + Reset} with ${Cyan + t.Name + Reset} =>`, Cyan, [...G.Vertices.values()].map(v => v.Name).join(' '), Reset)
 
     return cutWeight
 }
